@@ -27,4 +27,4 @@ git apply -R anesthesia_mod.patch
 Disclaimer
 This is an unofficial, fan-made patch and is not affiliated with, endorsed, or supported by Anesoft. All original game files remain the property of their respective copyright holders.
 
-If you encounter any difficulties, you can always DM me on here or on discord: atomicek1234
+If you encounter any difficulties, you can always DM me here or on Discord: atomicek1234
