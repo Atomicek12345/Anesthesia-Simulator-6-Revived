@@ -2,11 +2,15 @@
 
 A community modification for **Anesoft Anesthesia Simulator 6**. This repository contains only the patch file for the modifications and does not redistribute any original game assets or proprietary code.
 
+<img width="1919" height="1079" alt="sim1" src="https://github.com/user-attachments/assets/93aa7019-6888-44ac-bb6e-a00d50f05b49" />
+
 ## Prerequisites
 
 1. **Original Game Files:** You must obtain a clean copy of the original **DEMO** game files (**353 files in total with just the first case (Anesth6Case1.js)**) directly from the official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html) before applying this patch.
 2. Assets must be extracted from the public online demo for personal, educational use. Use the included tree.txt to verify your directory structure. Hint: use the dev console :)
 3. **Git:** You need [Git](https://git-scm.com/downloads) installed on your system to apply the `.patch` file.
+
+<img width="1317" height="922" alt="lookuptool" src="https://github.com/user-attachments/assets/92cd4579-a732-428c-b92d-635f4f9b4422" />
 
 ## Installation Instructions
 
