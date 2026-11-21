@@ -7,8 +7,8 @@ A community modification for **Anesoft Anesthesia Simulator 6**. This repository
 ## Prerequisites
 
 1. **Original Game Files:** You must hold a clean copy of the original **DEMO** program files (**352 files in total**).<br>
-Official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html).
-3. Use the included [File Veriier](https://atomicek12345.github.io/Anesthesia-Simulator-6-Revived/) to verify your directory structure. Hint: use the dev console :)
+Official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html). Hint: use the dev console :)
+3. Use the included [File Verifier](https://atomicek12345.github.io/Anesthesia-Simulator-6-Revived/) to verify your directory structure.
 4. **Git:** You need [Git](https://git-scm.com/downloads) installed on your system to apply the `.patch` file.
 
 <img width="1317" height="922" alt="lookuptool" src="https://github.com/user-attachments/assets/92cd4579-a732-428c-b92d-635f4f9b4422" />
