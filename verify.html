@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AnesCalc — Installation File Verifier</title>
+  <style>
+    :root {
+      --bg-page: #060a12;
+      --bg-header: #090e1a;
+      --bg-card: #101622;
+      --bg-inset: #0a0f1a;
+      --bg-tag: #172033;
+      --border-subtle: #1c2638;
+      --border-card: #222d40;
+      --border-tag: #2d3b55;
+      --accent-blue: #2563eb;
+      --accent-blue-light: #3b82f6;
+      --accent-blue-soft: #60a5fa;
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.12);
+      --red: #ef4444;
+      --red-bg: rgba(239, 68, 68, 0.12);
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    header {
+      background-color: var(--bg-header);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-group { display: flex; align-items: center; gap: 14px; }
+
+    .brand-badge {
+      background-color: var(--accent-blue);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 7px 14px;
+      border-radius: 7px;
+      text-decoration: none;
+    }
+
+    .brand-text h1 { font-size: 1.15rem; font-weight: 700; }
+    .brand-text p { font-size: 0.82rem; color: var(--text-muted); }
+
+    .back-link {
+      color: var(--accent-blue-soft);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid var(--border-card);
+      background: var(--bg-inset);
+      padding: 8px 14px;
+      border-radius: 8px;
+    }
+
+    main {
+      max-width: 960px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 36px 24px;
+    }
+
+    .panel {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .tag {
+      background-color: var(--bg-tag);
+      border: 1px solid var(--border-tag);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 5px;
+      text-transform: uppercase;
+    }
+
+    .desc { color: var(--text-muted); font-size: 0.92rem; margin-bottom: 22px; }
+
+    .picker-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background-color: var(--accent-blue);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 12px 22px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.15s ease;
+    }
+
+    .picker-btn:hover { background-color: var(--accent-blue-light); }
+    input[type="file"] { display: none; }
+
+    #results { display: none; }
+
+    .status-banner {
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .status-ok {
+      background: var(--green-bg);
+      border: 1px solid var(--green);
+      color: #6ee7b7;
+    }
+
+    .status-err {
+      background: var(--red-bg);
+      border: 1px solid var(--red);
+      color: #fca5a5;
+    }
+
+    .folder-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .folder-stat {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+
+    .folder-name {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--text-secondary);
+    }
+
+    .count-ok { color: #34d399; font-weight: 700; }
+    .count-err { color: #f87171; font-weight: 700; }
+
+    .missing-box {
+      background: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .missing-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .missing-label {
+      color: var(--accent-blue-light);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .copy-btn {
+      background: var(--bg-tag);
+      border: 1px solid var(--border-tag);
+      color: var(--text-secondary);
+      font-size: 0.78rem;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover { border-color: var(--accent-blue-light); }
+
+    pre {
+      max-height: 280px;
+      overflow-y: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.82rem;
+      color: #fca5a5;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-group">
+      <a href="index.html" class="brand-badge">🫀 AnesCalc</a>
+      <div class="brand-text">
+        <h1>Installation File Verifier</h1>
+        <p>Checks your simulator folder against all 353 required files</p>
+      </div>
+    </div>
+    <a href="index.html" class="back-link">← Back to Tools</a>
+  </header>
+
+  <main>
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Verify Required Game / Mod Files</h2>
+        <span class="tag">Local Check • No Upload</span>
+      </div>
+      <p class="desc">
+        Select the root simulator folder (the folder containing <code>index.html</code>, <code>cases</code>, <code>hemoWaveforms</code>, <code>images</code>, <code>respWaveforms</code>, <code>scripts</code>, <code>sounds</code>, and <code>styles</code>). Your browser checks file paths locally without uploading anything.
+      </p>
+
+      <label class="picker-btn" for="folderInput">
+        📁 Select Simulator Folder
+      </label>
+      <input type="file" id="folderInput" webkitdirectory directory multiple />
+    </div>
+
+    <div class="panel" id="results">
+      <div id="statusBanner" class="status-banner"></div>
+      <div class="folder-grid" id="folderGrid"></div>
+
+      <div class="missing-box" id="missingSection" style="display: none;">
+        <div class="missing-top">
+          <span class="missing-label">Missing File Paths:</span>
+          <button class="copy-btn" id="copyBtn" type="button">Copy List</button>
+        </div>
+        <pre id="missingList"></pre>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function buildRequiredList() {
+      const files = ["index.html", "cases/Anesth6Case1.js"];
+
+      // hemoWaveforms (99 files)
+      const rates12 = [20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 160];
+      const rates9 = [50, 60, 70, 80, 90, 100, 120, 140, 160];
+      files.push(
+        "hemoWaveforms/afib6_160.js",
+        "hemoWaveforms/asyst1_20.js",
+        "hemoWaveforms/vfib2_20.js",
+        "hemoWaveforms/vtach3_140.js",
+        "hemoWaveforms/sinus6_50.js",
+        "hemoWaveforms/sinus6_80.js"
+      );
+      ["sinus1", "sinus2", "sinus3", "sinus4", "st1", "st2", "st3"].forEach(p => {
+        rates12.forEach(r => files.push(`hemoWaveforms/${p}_${r}.js`));
+      });
+      rates9.forEach(r => files.push(`hemoWaveforms/sinus5_${r}.js`));
+
+      // images (150 files)
+      [
+        "airbag.jpg", "anesthSplash.jpg", "blank.jpg", "bobbin.jpg", "brokenHeart.jpg",
+        "circle_bagExp.jpg", "circle_bagInsp.jpg", "circle_spontExp.jpg", "circle_spontFlat.jpg",
+        "circle_spontInsp.jpg", "circle_vent0.jpg", "circle_vent1.jpg", "circle_vent2.jpg",
+        "Desflurane.jpg", "favicon.ico", "flowmeter.jpg", "fo_carina.jpg", "fo_esophagus.jpg",
+        "fo_lma.jpg", "fo_rightmainstem.jpg", "fo_secretions.jpg", "ghost.jpg", "heart.jpg",
+        "IncendiumInstaller.exe", "Isoflurane.jpg", "Sevoflurane.jpg"
+      ].forEach(name => files.push(`images/${name}`));
+
+      [
+        "clrP", "clr", "cri", "doCri", "doFoLma", "doFoTub", "doFo",
+        "doLma", "doTubP", "doTub", "lma", "mskP", "msk", "tubP", "tub"
+      ].forEach(p => {
+        for (let i = 1; i <= 8; i++) files.push(`images/${p}_${i}.jpg`);
+      });
+      for (let i = 1; i <= 4; i++) files.push(`images/lary_${i}.jpg`);
+
+      // respWaveforms (24 files)
+      [4, 6, 8, 10, 12, 15, 20, 30].forEach(n => {
+        ["hump", "nl", "slant"].forEach(p => files.push(`respWaveforms/${p}_${n}.js`));
+      });
+
+      // scripts (13 files)
+      [
+        "AboutAnesthSim6.js", "AnesthCode.js", "Default.js", "DrugInfo.js", "DrugInfo.js.bak",
+        "img.txt", "iscroll-lite.js", "IvAdmin.js", "ModelsAndFsm.js", "prototype.js",
+        "Recorder.js", "UserControl.js", "Waveform.js"
+      ].forEach(s => files.push(`scripts/${s}`));
+
+      // sounds (62 files)
+      files.push("sounds/pulseOx.wav");
+      for (let i = 40; i <= 100; i++) files.push(`sounds/po${i}.wav`);
+
+      // styles (3 files)
+      ["AnesthSim.css", "AnesthSim_narrow.css", "AnesthSim_short.css"].forEach(st => {
+        files.push(`styles/${st}`);
+      });
+
+      return files;
+    }
+
+    const REQUIRED_FILES = buildRequiredList();
+    const folderInput = document.getElementById("folderInput");
+    const resultsPanel = document.getElementById("results");
+    const statusBanner = document.getElementById("statusBanner");
+    const folderGrid = document.getElementById("folderGrid");
+    const missingSection = document.getElementById("missingSection");
+    const missingList = document.getElementById("missingList");
+    const copyBtn = document.getElementById("copyBtn");
+
+    folderInput.addEventListener("change", (e) => {
+      const selected = Array.from(e.target.files);
+      if (!selected.length) return;
+
+      // Normalize paths relative to the chosen folder
+      const presentExact = new Set();
+      const presentLower = new Set();
+
+      selected.forEach(file => {
+        const parts = file.webkitRelativePath.split("/");
+        const rel = parts.slice(1).join("/");
+        presentExact.add(rel);
+        presentLower.add(rel.toLowerCase());
+      });
+
+      const missing = [];
+      const folderCounts = {};
+
+      REQUIRED_FILES.forEach(req => {
+        const folder = req.includes("/") ? req.split("/")[0] : "(root)";
+        if (!folderCounts[folder]) folderCounts[folder] = { found: 0, total: 0 };
+        folderCounts[folder].total++;
+
+        if (presentExact.has(req) || presentLower.has(req.toLowerCase())) {
+          folderCounts[folder].found++;
+        } else {
+          missing.push(req);
+        }
+      });
+
+      resultsPanel.style.display = "block";
+
+      if (missing.length === 0) {
+        statusBanner.className = "status-banner status-ok";
+        statusBanner.innerHTML = `<span>✅ All ${REQUIRED_FILES.length} required files are present!</span><span>100% Complete</span>`;
+        missingSection.style.display = "none";
+      } else {
+        statusBanner.className = "status-banner status-err";
+        statusBanner.innerHTML = `<span>⚠️ Missing ${missing.length} of ${REQUIRED_FILES.length} required files</span><span>${REQUIRED_FILES.length - missing.length} Found</span>`;
+        missingSection.style.display = "block";
+        missingList.textContent = missing.join("\n");
+      }
+
+      folderGrid.innerHTML = Object.entries(folderCounts).map(([folder, stat]) => {
+        const ok = stat.found === stat.total;
+        return `
+          <div class="folder-stat">
+            <span class="folder-name">${folder}</span>
+            <span class="${ok ? "count-ok" : "count-err"}">${stat.found}/${stat.total}</span>
+          </div>
+        `;
+      }).join("");
+    });
+
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(missingList.textContent);
+      copyBtn.textContent = "Copied!";
+      setTimeout(() => (copyBtn.textContent = "Copy List"), 1500);
+    });
+  </script>
+</body>
+</html>
