@@ -19,7 +19,7 @@ A community modification for **Anesoft Anesthesia Simulator 6**. This repository
    git apply anesthesia_mod.patch
    ```
 Troubleshooting
-"Patch does not apply" error: Ensure your base folder contains the exact, unedited 774 files from the Anesoft website and that no files have been renamed or moved.
+"Patch does not apply" error: Ensure your base folder contains the exact, unedited 353 files from the Anesoft website and that no files have been renamed or moved.
 
 Reverting changes: To undo the mod and restore the original game, run:
 ```bash
