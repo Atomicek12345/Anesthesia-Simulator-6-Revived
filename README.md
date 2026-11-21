@@ -6,7 +6,7 @@ A community modification for **Anesoft Anesthesia Simulator 6**. This repository
 
 ## Prerequisites
 
-1. **Original Game Files:** You must hold a clean copy of the original **DEMO** program files (**353 files in total**).<br>
+1. **Original Game Files:** You must hold a clean copy of the original **DEMO** program files (**352 files in total**).<br>
 Official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html).
 3. Use the included [tree.txt](https://github.com/Atomicek12345/Anesthesia-Simulator-6-Revived/blob/main/tree(required%20files).txt) to verify your directory structure. Hint: use the dev console :)
 4. **Git:** You need [Git](https://git-scm.com/downloads) installed on your system to apply the `.patch` file.
@@ -15,7 +15,7 @@ Official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html).
 
 ## Installation Instructions
 
-1. Make sure you have all the **353 original DEMO files** in a clean folder on your computer.
+1. Make sure you have all the **352 original DEMO files** in a clean folder on your computer.
 2. Make a backup of the unmodified files for future updates.
 3. Download `anesthesia_mod.patch` from the latest release and place it directly inside that same folder (alongside the original files).
 4. Open a terminal or command prompt inside your game folder.
@@ -24,7 +24,7 @@ Official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html).
 git apply --whitespace=nowarn anesthesia_mod.patch
 ```
 Troubleshooting
-"Patch does not apply" error: Ensure your base folder contains the exact, unedited 353 files from the demo program and that no files have been renamed or moved.
+"Patch does not apply" error: Ensure your base folder contains the exact, unedited 352 files from the demo program and that no files have been renamed or moved.
 
 Reverting changes: To undo the mod and restore the original game, run:
 ```bash
