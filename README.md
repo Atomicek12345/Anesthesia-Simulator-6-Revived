@@ -4,7 +4,7 @@
 
 A community modification for **Anesoft Anesthesia Simulator 6**. This repository contains only the patch file for the modifications and does not redistribute any original game assets or proprietary code.
 
-<img width="1919" height="1079" alt="sim1" src="https://github.com/user-attachments/assets/93aa7019-6888-44ac-bb6e-a00d50f05b49" />
+<img width="1919" height="1079" alt="sim1" src="https://github.com/user-attachments/assets/826c0fd0-fc4e-4cf7-8b4f-1c18ac79b111" />
 
 ## Prerequisites
 
