@@ -16,14 +16,14 @@ A community modification for **Anesthesia Simulator 6**. This repository contain
 4. Run the following command to apply the changes:
    ```bash
    git apply anesthesia_mod.patch
-
+   ```
 Troubleshooting
 "Patch does not apply" error: Ensure your base folder contains the exact, unedited 774 files from the Anesoft website and that no files have been renamed or moved.
 
 Reverting changes: To undo the mod and restore the original game, run:
 ```bash
 git apply -R anesthesia_mod.patch
-
+```
 Disclaimer
 This is an unofficial, fan-made patch and is not affiliated with, endorsed, or supported by Anesoft. All original game files remain the property of their respective copyright holders.
 
