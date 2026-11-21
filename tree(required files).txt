@@ -288,7 +288,6 @@
 ª       Default.js
 ª       DrugInfo.js
 ª       DrugInfo.js.bak
-ª       img.txt
 ª       iscroll-lite.js
 ª       IvAdmin.js
 ª       ModelsAndFsm.js
