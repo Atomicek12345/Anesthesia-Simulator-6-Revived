@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AnesCalc — Anesthesia Sim Tools</title>
+  <style>
+    :root {
+      --bg-page: #060a12;
+      --bg-header: #090e1a;
+      --bg-card: #101622;
+      --bg-card-hover: #141c2b;
+      --bg-inset: #0a0f1a;
+      --bg-tag: #172033;
+      --border-subtle: #1c2638;
+      --border-card: #222d40;
+      --border-tag: #2d3b55;
+      --accent-blue: #2563eb;
+      --accent-blue-light: #3b82f6;
+      --accent-blue-soft: #60a5fa;
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* Top Header matching AnesCalc bar */
+    header {
+      background-color: var(--bg-header);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-badge {
+      background-color: var(--accent-blue);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 7px 14px;
+      border-radius: 7px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.01em;
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.3);
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.25;
+    }
+
+    .brand-text p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .repo-pill {
+      background-color: var(--bg-inset);
+      border: 1px solid var(--border-card);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .repo-pill span {
+      color: var(--accent-blue-soft);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      text-transform: none;
+      margin-left: 6px;
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1160px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 48px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+    }
+
+    /* Clickable Tool Card */
+    .tool-card {
+      text-decoration: none;
+      color: inherit;
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 330px;
+      transition: transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .tool-card:hover,
+    .tool-card:focus-visible {
+      background-color: var(--bg-card-hover);
+      border-color: var(--accent-blue-light);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+      outline: none;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .card-tag {
+      background-color: var(--bg-tag);
+      border: 1px solid var(--border-tag);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .card-use {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .card-use strong {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    /* Inset Box matching DOSAGE panel */
+    .inset-box {
+      background-color: var(--bg-inset);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .inset-label {
+      color: var(--accent-blue-light);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .inset-content {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    .highlight {
+      color: var(--accent-blue-soft);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.86rem;
+    }
+
+    /* Card Footer */
+    .card-footer {
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.85rem;
+    }
+
+    .file-label {
+      color: var(--text-muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+    }
+
+    .action-link {
+      color: var(--accent-blue-light);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: transform 0.15s ease;
+    }
+
+    .tool-card:hover .action-link {
+      transform: translateX(3px);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-group">
+      <div class="brand-badge">🫀 AnesCalc</div>
+      <div class="brand-text">
+        <h1>Anesthesia Sim Mod Suite</h1>
+        <p>Instant dosage reference &amp; custom case builder</p>
+      </div>
+    </div>
+    <div class="repo-pill">
+      MOD TOOLS <span>v1.0</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="cards-grid">
+
+      <!-- Box 1: Medication Lookup -->
+      <a href="lookup.html" class="tool-card">
+        <div>
+          <div class="card-header">
+            <h2 class="card-title">Medication Lookup</h2>
+            <span class="card-tag">Reference</span>
+          </div>
+          <p class="card-use">
+            <strong>Use:</strong> Instant medication search, clinical indications, and pharmacodynamic dosing reference.
+          </p>
+        </div>
+
+        <div class="inset-box">
+          <div class="inset-label">Capabilities:</div>
+          <div class="inset-content">
+            Filter drugs by clinical scenario <span class="highlight">[RSI, Anaphylaxis, TIVA]</span>, calculate weight-adjusted bolus or infusion rates <span class="highlight">[mg/kg]</span>, and check overdose thresholds.
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <span class="file-label">lookup.html</span>
+          <span class="action-link">Open Lookup →</span>
+        </div>
+      </a>
+
+      <!-- Box 2: Case Builder -->
+      <a href="case_bld.html" class="tool-card">
+        <div>
+          <div class="card-header">
+            <h2 class="card-title">Custom Case Builder</h2>
+            <span class="card-tag">Builder + Docs</span>
+          </div>
+          <p class="card-use">
+            <strong>Use:</strong> Design, configure, and export custom anesthesia simulation cases with built-in guides.
+          </p>
+        </div>
+
+        <div class="inset-box">
+          <div class="inset-label">Capabilities:</div>
+          <div class="inset-content">
+            Build custom patient scenarios from scratch with integrated documentation <span class="highlight">[caseconstructioninstructs.md]</span> and quick-reference syntax <span class="highlight">[cheastsheet.md]</span>.
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <span class="file-label">case_bld.html</span>
+          <span class="action-link">Open Builder →</span>
+        </div>
+      </a>
+
+    </div>
+  </main>
+
+</body>
+</html>
