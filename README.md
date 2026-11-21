@@ -4,13 +4,13 @@ A community modification for **Anesoft Anesthesia Simulator 6**. This repository
 
 ## Prerequisites
 
-1. **Original Game Files:** You must obtain a clean copy of the original **DEMO** game files (**386 files in total**) directly from the official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html) before applying this patch.
+1. **Original Game Files:** You must obtain a clean copy of the original **DEMO** game files (**353 files in total**) directly from the official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html) before applying this patch.
 2. It is required to manually "carve" out every file, you can verify it with the tree.txt file in this repo. Hint: use the dev console :)
 3. **Git:** You need [Git](https://git-scm.com/downloads) installed on your system to apply the `.patch` file.
 
 ## Installation Instructions
 
-1. Download all **386 original DEMO files** from the official Anesoft website into a clean folder on your computer.
+1. Download all **353 original DEMO files** from the official Anesoft website into a clean folder on your computer.
 2. Download `anesthesia_mod.patch` from this repository and place it directly inside that same game folder (alongside the original files).
 3. Open a terminal or command prompt inside your game folder.
 4. Run the following command to apply the changes:
