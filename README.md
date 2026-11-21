@@ -19,15 +19,15 @@ A community modification for **Anesoft Anesthesia Simulator 6**. This repository
 3. Download `anesthesia_mod.patch` from the latest release and place it directly inside that same game folder (alongside the original files).
 4. Open a terminal or command prompt inside your game folder.
 5. Run the following command to apply the changes:
-   ```bash
-   git apply anesthesia_mod.patch
-   ```
+```bash
+git apply --whitespace=nowarn anesthesia_mod.patch
+```
 Troubleshooting
 "Patch does not apply" error: Ensure your base folder contains the exact, unedited 353 files from the Anesoft website and that no files have been renamed or moved.
 
 Reverting changes: To undo the mod and restore the original game, run:
 ```bash
-git apply --whitespace=nowarn anesthesia_mod.patch
+git apply -R anesthesia_mod.patch
 ```
 Disclaimer
 "This is an unofficial, non-commercial educational modification/revival project of the legacy Anesthesia Simulator 6. All original trademarks, media, and case scenarios remain the intellectual property of Anesoft Corporation. No commercial use is intended or permitted."
