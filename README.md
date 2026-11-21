@@ -1,4 +1,4 @@
-# Anesthesia Simulator 6 — Custom Mod Patch
+# Anesthesia Simulator 6 - Custom Mod Patch
 
 A community modification for **Anesoft Anesthesia Simulator 6**. This repository contains only the patch file for the modifications and does not redistribute any original game assets or proprietary code.
 
