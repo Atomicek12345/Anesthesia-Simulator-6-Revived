@@ -16,7 +16,7 @@ Official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html).
 ## Installation Instructions
 
 1. Make sure you have all the **353 original DEMO files** in a clean folder on your computer.
-2. Make a backup of the vanilla files for future updates.
+2. Make a backup of the unmodified files for future updates.
 3. Download `anesthesia_mod.patch` from the latest release and place it directly inside that same folder (alongside the original files).
 4. Open a terminal or command prompt inside your game folder.
 5. Run the following command to apply the changes:
