@@ -27,7 +27,7 @@ Troubleshooting
 
 Reverting changes: To undo the mod and restore the original game, run:
 ```bash
-git apply -R anesthesia_mod.patch
+git apply --whitespace=nowarn anesthesia_mod.patch
 ```
 Disclaimer
 "This is an unofficial, non-commercial educational modification/revival project of the legacy Anesthesia Simulator 6. All original trademarks, media, and case scenarios remain the intellectual property of Anesoft Corporation. No commercial use is intended or permitted."
