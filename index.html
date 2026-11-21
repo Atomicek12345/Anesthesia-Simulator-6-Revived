@@ -105,7 +105,7 @@
     /* Main Container */
     main {
       flex: 1;
-      max-width: 1160px;
+      max-width: 1260px;
       width: 100%;
       margin: 0 auto;
       padding: 48px 24px;
@@ -116,7 +116,7 @@
 
     .cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 24px;
     }
 
@@ -127,7 +127,7 @@
       background-color: var(--bg-card);
       border: 1px solid var(--border-card);
       border-radius: 12px;
-      padding: 28px;
+      padding: 26px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -153,7 +153,7 @@
     }
 
     .card-title {
-      font-size: 1.45rem;
+      font-size: 1.38rem;
       font-weight: 700;
       color: var(--text-primary);
       letter-spacing: -0.01em;
@@ -198,7 +198,7 @@
 
     .inset-label {
       color: var(--accent-blue-light);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.74rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -207,15 +207,15 @@
     }
 
     .inset-content {
-      font-size: 0.9rem;
+      font-size: 0.89rem;
       color: var(--text-secondary);
       line-height: 1.55;
     }
 
     .highlight {
       color: var(--accent-blue-soft);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.86rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.84rem;
     }
 
     /* Card Footer */
@@ -230,7 +230,7 @@
 
     .file-label {
       color: var(--text-muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 0.8rem;
     }
 
@@ -255,7 +255,7 @@
       <div class="brand-badge">🫀 AnesCalc</div>
       <div class="brand-text">
         <h1>Anesthesia Sim Mod Suite</h1>
-        <p>Instant dosage reference &amp; custom case builder</p>
+        <p>Dosage reference, custom case builder &amp; installation verifier</p>
       </div>
     </div>
     <div class="repo-pill">
@@ -267,57 +267,4 @@
     <div class="cards-grid">
 
       <!-- Box 1: Medication Lookup -->
-      <a href="lookup.html" class="tool-card">
-        <div>
-          <div class="card-header">
-            <h2 class="card-title">Medication Lookup</h2>
-            <span class="card-tag">Reference</span>
-          </div>
-          <p class="card-use">
-            <strong>Use:</strong> Instant medication search, clinical indications, and pharmacodynamic dosing reference.
-          </p>
-        </div>
-
-        <div class="inset-box">
-          <div class="inset-label">Capabilities:</div>
-          <div class="inset-content">
-            Filter drugs by clinical scenario <span class="highlight">[RSI, Anaphylaxis, TIVA]</span>, calculate weight-adjusted bolus or infusion rates <span class="highlight">[mg/kg]</span>, and check overdose thresholds.
-          </div>
-        </div>
-
-        <div class="card-footer">
-          <span class="file-label">lookup.html</span>
-          <span class="action-link">Open Lookup →</span>
-        </div>
-      </a>
-
-      <!-- Box 2: Case Builder -->
-      <a href="case_bld.html" class="tool-card">
-        <div>
-          <div class="card-header">
-            <h2 class="card-title">Custom Case Builder</h2>
-            <span class="card-tag">Builder + Docs</span>
-          </div>
-          <p class="card-use">
-            <strong>Use:</strong> Design, configure, and export custom anesthesia simulation cases with built-in guides.
-          </p>
-        </div>
-
-        <div class="inset-box">
-          <div class="inset-label">Capabilities:</div>
-          <div class="inset-content">
-            Build custom patient scenarios from scratch with integrated documentation <span class="highlight">[caseconstructioninstructs.md]</span> and quick-reference syntax <span class="highlight">[cheastsheet.md]</span>.
-          </div>
-        </div>
-
-        <div class="card-footer">
-          <span class="file-label">case_bld.html</span>
-          <span class="action-link">Open Builder →</span>
-        </div>
-      </a>
-
-    </div>
-  </main>
-
-</body>
-</html>
+      <a href="
