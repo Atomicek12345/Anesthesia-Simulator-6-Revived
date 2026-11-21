@@ -11,9 +11,10 @@ A community modification for **Anesoft Anesthesia Simulator 6**. This repository
 ## Installation Instructions
 
 1. Download all **353 original DEMO files** from the official Anesoft website into a clean folder on your computer.
-2. Download `anesthesia_mod.patch` from the latest release and place it directly inside that same game folder (alongside the original files).
-3. Open a terminal or command prompt inside your game folder.
-4. Run the following command to apply the changes:
+2. Make a backup of the vanilla files for future updates.
+3. Download `anesthesia_mod.patch` from the latest release and place it directly inside that same game folder (alongside the original files).
+4. Open a terminal or command prompt inside your game folder.
+5. Run the following command to apply the changes:
    ```bash
    git apply anesthesia_mod.patch
    ```
