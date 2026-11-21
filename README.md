@@ -1,2 +1,29 @@
-# Anesthesia-Simulator-6-Revived
+# Anesthesia Simulator 6 — Custom Mod Patch
+
 A community modification for **Anesthesia Simulator 6**. This repository contains only the patch file for the modifications and does not redistribute any original game assets or proprietary code.
+
+## Prerequisites
+
+1. **Original Game Files:** You must obtain a clean copy of the original game files (**774 files in total**) directly from the official **Anesoft** website before applying this patch.
+2. **Git:** You need [Git](https://git-scm.com/downloads) installed on your system to apply the `.patch` file.
+
+## Installation Instructions
+
+1. Download all **774 original files** from the official Anesoft website into a clean folder on your computer.
+2. Download `anesthesia_mod.patch` from this repository and place it directly inside that same game folder (alongside the original files).
+3. Open a terminal or command prompt inside your game folder.
+4. Run the following command to apply the changes:
+   ```bash
+   git apply anesthesia_mod.patch
+
+Troubleshooting
+"Patch does not apply" error: Ensure your base folder contains the exact, unedited 774 files from the Anesoft website and that no files have been renamed or moved.
+
+Reverting changes: To undo the mod and restore the original game, run:
+
+Bash
+git apply -R anesthesia_mod.patch
+Disclaimer
+This is an unofficial, fan-made patch and is not affiliated with, endorsed, or supported by Anesoft. All original game files remain the property of their respective copyright holders.
+
+If you encounter any difficulties, you can always DM me on here or on discord: atomicek1234
