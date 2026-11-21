@@ -1,0 +1,2485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anesthesia Sim Quick-Lookup Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darker: '#0f172a',
+                        card: '#1e293b',
+                        accent: '#3b82f6'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-blue-500 selection:text-white">
+
+    <!-- Top Bar / Global Controls -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-3 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg font-bold text-lg tracking-wider shadow">🫀 AnesCalc</div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg text-slate-100">Anesthesia Sim Quick Lookup</h1>
+                    <p class="text-xs text-slate-400">Instant dosage & pharmacodynamic reference</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 w-full sm:w-auto justify-end">
+                <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 shadow-inner">
+                    <label for="patientWeight" class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Patient Weight:</label>
+                    <input type="number" id="patientWeight" value="70" min="1" max="300" 
+                        class="w-16 bg-slate-900 text-blue-400 font-bold text-center rounded border border-slate-700 px-1 py-0.5 focus:outline-none focus:border-blue-500">
+                    <span class="text-xs text-slate-400 font-medium">kg</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        
+        <!-- Search & Filter Controls -->
+        <div class="mb-6 space-y-4">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-slate-400">
+                    🔍
+                </span>
+                <input type="text" id="searchInput" placeholder="Search by drug name, indication (e.g. 'bradycardia', 'bronchospasm'), or action... (Press '/' to focus)" 
+                    class="w-full pl-11 pr-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 shadow-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm sm:text-base">
+            </div>
+
+            <!-- Category Pills -->
+            <div id="categoryFilters" class="flex flex-wrap gap-2 text-xs font-medium">
+                <!-- Buttons are built by JavaScript from the editable groups -->
+            </div>
+        </div>
+
+        <!-- Drug Grid -->
+        <div id="drugGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Populated via JavaScript -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-16">
+            <div class="text-4xl mb-2">🧪</div>
+            <h3 class="text-lg font-semibold text-slate-300">No matching drugs found</h3>
+            <p class="text-sm text-slate-500">Try adjusting your search query or filters.</p>
+        </div>
+    </main>
+
+    <!-- Detailed Modal -->
+    <div id="drugModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-200" id="modalContent">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/50">
+                <div>
+                    <span id="modalBadge" class="text-xs font-semibold px-2.5 py-1 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">Drug Profile</span>
+                    <h2 id="modalTitle" class="text-2xl font-bold text-slate-100 mt-1">Drug Name</h2>
+                </div>
+                <button id="closeModal" class="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition">✕</button>
+            </div>
+            <div class="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+                <div>
+                    <h3 class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Indications & Uses</h3>
+                    <p id="modalUse" class="text-slate-200 text-sm whitespace-pre-line bg-slate-950/40 p-3 rounded-xl border border-slate-800/80"></p>
+                </div>
+                <div>
+                    <h3 class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Standard Dosage (Patient Calculated)</h3>
+                    <div id="modalDose" class="text-slate-200 text-sm whitespace-pre-line bg-blue-950/20 p-3 rounded-xl border border-blue-900/30 font-mono"></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <h3 class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Mechanism of Action</h3>
+                        <p id="modalAction" class="text-slate-300 text-xs whitespace-pre-line bg-slate-950/40 p-3 rounded-xl border border-slate-800/80 h-full"></p>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1">Complications & Cautions</h3>
+                        <p id="modalComplication" class="text-slate-300 text-xs whitespace-pre-line bg-amber-950/10 p-3 rounded-xl border border-amber-900/20 h-full"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-3 bg-slate-950 border-t border-slate-800 flex justify-end">
+                <button id="closeModalBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium rounded-xl transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Editor Modal -->
+    <div id="groupModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/50">
+                <h2 class="text-xl font-bold text-slate-100">Edit Groups</h2>
+                <button id="closeGroupModal" class="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition">✕</button>
+            </div>
+            <div class="p-6 space-y-3">
+                <div class="flex flex-wrap gap-2 items-center">
+                    <select id="groupSelect" class="flex-1 min-w-[10rem] bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100"></select>
+                    <button id="grpNew" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium">+ New</button>
+                    <button id="grpRename" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 text-xs font-medium">Rename</button>
+                    <button id="grpDelete" class="px-3 py-1.5 rounded-lg bg-slate-800 text-red-400 border border-slate-700 text-xs font-medium">Delete</button>
+                </div>
+                <input type="text" id="groupDrugSearch" placeholder="Filter drug list..." class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+                <div id="groupDrugList" class="max-h-[45vh] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1 bg-slate-950/40 p-2 rounded-xl border border-slate-800/80 text-sm"></div>
+                <p id="groupCount" class="text-xs text-slate-500"></p>
+            </div>
+            <div class="px-6 py-3 bg-slate-950 border-t border-slate-800 flex justify-between">
+                <button id="grpReset" class="px-3 py-2 text-xs text-slate-400 hover:text-red-400">Reset to defaults</button>
+                <button id="closeGroupBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium rounded-xl transition">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Embedded Drug Database -->
+    <script>
+        const DrugInfo = {
+            "Drugs": [
+                {
+                    "nameStr": "Select desired drug:",
+                    "actionStr": "",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0],
+                    "bolusE100": 1,
+                    "bolusUnit": "none",
+                    "complicationStr": "",
+                    "doseStr": "",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [0],
+                    "infusionE100": 1,
+                    "infusionUnit": "none",
+                    "overdose": 10,
+                    "useStr": ""
+                },
+                {
+                    "nameStr": "Adenosine",
+                    "actionStr": "Endogenous purine nucleoside that depresses AV node activity.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10,11,12,18,24],
+                    "bolusE100": 0.06,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. Common but transient - flushing, dyspnea, chest pain, bradycardia, ventricular ectopy\n2. Important drug interactions with theophylline, dipyridamole, carbamazepine",
+                    "doseStr": "1. Rapid 6 mg IV bolus over 1-3 seconds\n2. May repeat at 12 mg IV bolus within 1-2 minutes\n3. Patients taking theophylline may require larger doses",
+                    "effect": "hr",
+                    "effectMagnitude": -10,
+                    "effectSec": 60,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.4,
+                    "useStr": "1. Effective in terminating paroxysmal supraventricular tachycardia involving reentry pathways that include the AV node or sinus node.\n2. May produce transient AV block that may help identify other rapid rhythms."
+                },
+                {
+                    "nameStr": "Albuterol",
+                    "actionStr": "Beta agonist (mainly beta-2)",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "bolusE100": 0.1,
+                    "bolusUnit": "puff",
+                    "complicationStr": "1. Arrhythmias\n2. Hypertension\n3. Nausea and vomiting\n4. Fewer cardiovascular side effects with beta-2 selective agents than non-selective beta agonists",
+                    "doseStr": "2-3 puffs of metered dose (90 mcg/puff), 8-10 puffs if intubated",
+                    "effect": "hr",
+                    "effectMagnitude": 10,
+                    "effectSec": 300,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.4,
+                    "useStr": "Treat bronchospasm"
+                },
+                {
+                    "nameStr": "Alfentanil",
+                    "actionStr": "1. Alfentanil is a fentanyl derivative that is approximately one-third to one-fifth as potent as fentanyl, but has faster onset and shorter duration of action than fentanyl.\n2. Alfentanil has a smaller volume of distribution than fentanyl, so even with slower clearance than fentanyl, alfentanil has a faster elimination half-life.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,70,80,90,100,200,300,400,500,1000,2000,3000,4000,5000],
+                    "bolusE100": 75,
+                    "bolusUnit": "mcg",
+                    "complicationStr": "1. Attenuates the catecholamine and hormonal response to intubation and incision.\n2. May cause a decrease in blood pressure due to vasodilation, especially when administered rapidly to unstimulated patients or patients who are debilitated or hypovolemic.\n3. Duration and degree of respiratory depression usually increase with dose.\n4. Because of the possibility of delayed respiratory depression, monitoring must continue well after surgery.\n5. Nausea and vomiting\n6. Skeletal muscle rigidity\n7. Prolonged and pronounced effect in patients with cirrhosis\n8. Imidazole antifungal drugs cause markedly prolonged effect of alfentanil due to inhibition of the hepatic enzyme P450 3A4\n9. Chronic renal failure causes altered protein binding of alfentanil.",
+                    "doseStr": "Bolus:\n3 - 5 mcg/kg bolus doses for short procedures (<30 min)\n20-50 mcg/kg bolus dose for intermediate procedure (30-60 min)\nContinuous infusion (>45 min procedure)\n50 - 75 mcg/kg bolus followed by 0.5-3.0 mcg/kg/min infusion.\nTypically, an infusion rate of 1 to 1.5 mcg/kg/min produces adequate analgesia, reduces sympathetic response to surgical stress, and provides rapid recovery with some postoperative analgesia.\nIn the absence of signs of inadequate anesthetic depth, infusion rates should always be adjusted downward until there is some response to surgical stimulation.\nInfusion should be discontinued at least 10 to 15 minutes prior to the end of surgery.",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 600,
+                    "infusionDoses": [0,1,2,3,4,5],
+                    "infusionE100": 3,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 500,
+                    "useStr": "Opioid which can be suitably applied to infusion techniques."
+                },
+                {
+                    "nameStr": "Aminophylline",
+                    "actionStr": "Phosphodiesterase inhibitor -> bronchodilation and positive inotropy and chronotropy",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,50,100,200,300,400,500,600,700,800,900,1000],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Tachyarrhythmias\nCNS stimulation\nNausea and vomiting",
+                    "doseStr": "6 mg/kg IV loading dose over 20 min, followed by infusion:\n0.7 mg/kg/hr for young, healthy\n0.6 mg/kg/hr for old, healthy\n0.5 mg/kg/hr CHF or liver disease",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,2,3],
+                    "infusionE100": 1,
+                    "infusionUnit": "mg/kg/hr",
+                    "overdose": 12,
+                    "useStr": "Treat bronchospasm"
+                },
+                {
+                    "nameStr": "Amiodarone",
+                    "actionStr": "Class I, II, III, IV antiarrhythmic agent\nClass I : Sodium channel blockade, depresses conduction velocity\nClass II : Noncompetitive alpha and beta blockadeClass III : Increases action potential duration, prolongs repolarization and refractoriness\nClass IV : Calcium channel blockade, slows conduction in AV node",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,70,80,90,100,150,200,300],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Hypotension - treat with fluids and pressors as needed\nMarked bradycardias and AV block - use chronotropic agents or temporary pacing as needed\nReduced myocardial contractility\nLiver enzyme elevations\nPulmonary disorders\nDrug interactions",
+                    "doseStr": "For cardiac arrest, 300 mg IV push.\nConsider second dose of 150 mg if VF/pulseless VT recurs.\nFor other arrhythmias, first rapid loading infusion: 150 mg over 10 min (15 mg/min),\nfollowed by slow loading: 360 mg over next 6 hr (1 mg/min),\nfollowed by maintenance infusion: 540 mg over next 18 hr (0.5 mg/min).",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [0,0.5,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20],
+                    "infusionE100": 0,
+                    "infusionUnit": "mg/min",
+                    "overdose": 12,
+                    "useStr": "Recommended after defibrillation and epinephrine in ventricular fibrillation and pulseless ventricular tachycardia\nControl the ventricular rate in rapid atrial arrhythmias.\nControl hemodynamically stable ventricular tachycardia and wide complex tachycardia of unknown origin.\nAdjunct to electrical cardioversion of refractory PSVT, atrial tachycardia and pharmacologic cardioversion of atrial fibrillation.\nControl rapid ventricular rate due to accessory pathway in preexcited atrial arrhythmias."
+                },
+                {
+                    "nameStr": "Ampicillin",
+                    "actionStr": "Covers non-penicillinase producing gram positive bacteria and many gram negative bacteria.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,2],
+                    "bolusE100": 1,
+                    "bolusUnit": "gm",
+                    "complicationStr": "Allergies similar to penicillin",
+                    "doseStr": "20 mg/kg (1 gm for most adults)\nUse vancomycin plus gentamicin in patients with penicillin allergy.",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 10,
+                    "useStr": "Ampicillin plus gentamicin treats infection and is a recommended SBE prophylactic antibiotic combination for patients with a heart murmur undergoing urologic and GI surgery. \nAdjunct to electrical cardioversion of refractory PSVT, atrial tachycardia and pharmacologic cardioversion of atrial fibrillation.\nControl rapid ventricular rate due to accessory pathway in preexcited atrial arrhythmias."
+                },
+                {
+                    "nameStr": "Atropine",
+                    "actionStr": "Competitive blockade of acetylcholine at muscarinic receptors",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0],
+                    "bolusE100": 0.01,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Tachyarrhythmias\nLow dose may cause paradoxical bradycardia\nDry mouth\nUrinary retention\nCrosses blood-brain barrier and placenta",
+                    "doseStr": "Adult dose: 0.4 - 1.0 mg for bradycardia\nPediatric dose: 0.02 mg/kg, minimum 0.1 mg",
+                    "effect": "hr",
+                    "effectMagnitude": 10,
+                    "effectSec": 30,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.2,
+                    "useStr": "Treat bradycardia\nAntisialogogue"
+                },
+                {
+                    "nameStr": "Beclomethasone",
+                    "actionStr": "Synthetic halogenated corticosteroid with anti-inflammatory activity",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "bolusE100": 1,
+                    "bolusUnit": "puff",
+                    "complicationStr": "1. Death from adrenal insufficiency has occurred in patients transferred from systemic corticosteroids to beclomethasone\n2. Localized infections in the mouth and pharynx",
+                    "doseStr": "2 inhalations (84 mcg)",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 300,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.4,
+                    "useStr": "Treat bronchial asthma in patients already receiving corticosteroids or those patients inadequately controlled on nonsteroid regimen."
+                },
+                {
+                    "nameStr": "Calcium",
+                    "actionStr": "1. Essential for muscle contraction\n2. Vasoconstriction\n3. Necessary for coagulation",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,100,200,300,400,500,600,700,800,900,1000],
+                    "bolusE100": 5,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Bradycardia or arrhythmia",
+                    "doseStr": "5 - 10 mg/kg IV for life-threatening hypocalcemia or hyperkalemia",
+                    "effect": "bp",
+                    "effectMagnitude": 10,
+                    "effectSec": 600,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 40,
+                    "useStr": "1. Treat hypocalcemia\n2. Treat hyperkalemia or hypermagnesemia\n3. Treat hypotension"
+                },
+                {
+                    "nameStr": "Cefazolin",
+                    "actionStr": "First generation cephalosporin",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.2,0.4,0.6,0.8,1,1.2,1.4,1.6,1.8,2],
+                    "bolusE100": 1,
+                    "bolusUnit": "gm",
+                    "complicationStr": "5-10% of patients with penicillin allergy may react to cefazolin.",
+                    "doseStr": "10 mg/kg - 1 gm for most adults",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.2,
+                    "useStr": "Prophylaxis and treatment of gram positive cocci and gram negative rod infections."
+                },
+                {
+                    "nameStr": "Cefotetan",
+                    "actionStr": "Cefotetan is a second generation cephalosporin",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.2,0.4,0.6,0.8,1,1.2,1.4,1.6,1.8,2],
+                    "bolusE100": 1,
+                    "bolusUnit": "gm",
+                    "complicationStr": "Patients with penicillin allergy may react to cefotetan.",
+                    "doseStr": "1-2 gm for most adults",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.2,
+                    "useStr": "Treat gram positive cocci and gram positive anaerobe infections."
+                },
+                {
+                    "nameStr": "Cimetidine",
+                    "actionStr": "Histamine receptor (H2) blocker leading to a reduction in gastric acid production",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,50,100,150,200,250,300],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. Reduction of liver microsomal enzymes\n2. Potentiation of oral anticoagulants, propranolol, benzodiazepines, meperidine by competing for cytochrome P-450 biotransformation.\n3. Arrhythmias have been reported",
+                    "doseStr": "300 mg IV",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 20,
+                    "useStr": "Reduction of gastric acid production and raise gastric pH"
+                },
+                {
+                    "nameStr": "Cisatracurium",
+                    "actionStr": "Cisatracurium is a synthetic competitive neuromuscular blocking agent. It is relatively short acting and its elimination is not dependent on renal or hepatic function. Cisatracurium is broken down by Hoffmann elimination, a chemical process that occurs at physiological pH and temperature. This process does not involve renal, hepatic, or enzymatic function.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20],
+                    "bolusE100": 0.1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. Does not cause histamine release\n2. Does not have actions on autonomic ganglia or cardiac muscarinic receptors\nLaudanosine, a compound that can cause seizures at very high levels, is produced by Hoffmann elimination, but to a lesser extent than from atracurium.",
+                    "doseStr": "0.1 mg/kg\nAn intubation dose should be reversible in 20 - 30 min",
+                    "effect": "nmb",
+                    "effectMagnitude": 1,
+                    "effectSec": 1800,
+                    "infusionDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "infusionE100": 6,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 2,
+                    "useStr": "Competitive neuromuscular blocking agent"
+                },
+                {
+                    "nameStr": "Dantrolene",
+                    "actionStr": "Reduce calcium release from sarcoplasmic reticulum",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,20,40,60,80,100,150,200,250,300,350,400],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. Muscle weakness plus additive effect with neuromuscular blockers\n2. GI upset\n3. Drowsiness, sedation\n4. Liver dysfunction\n5. Tissue irritation",
+                    "doseStr": "Syndrome: 3 mg/kg IV bolus, repeat to maximum of 10 mg/kg",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 20,
+                    "useStr": "Treat malignant hyperthermia"
+                },
+                {
+                    "nameStr": "Dexamethasone",
+                    "actionStr": "1. Anti-inflammatory\n2. 25 times ore glucocorticoid activity than hydrocortisone\n3. Minimal mineralocorticoid effect",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.2,0.4,0.6,0.8,1,2,3,4,5,6,7,8,9,10],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. May cause adrenal suppression\n2. Delayed wound healing\n3. Osteoporosis\n4. Electrolyte imbalance\n5. CNS disturbances - depression, psychosis",
+                    "doseStr": "4 mg every 6 hours",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 2,
+                    "useStr": "1. Adrenal insufficiency\n2. Inflammation and allergy\n3. Septic shock\n4. Brain injury"
+                },
+                {
+                    "nameStr": "Dextrose50",
+                    "actionStr": "Source of glucose",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,5,10,15,20,25,30,35,40,45,50],
+                    "bolusE100": 1,
+                    "bolusUnit": "ml",
+                    "complicationStr": "1. Should not be administered simultaneously with blood in the same IV since pseudo-agglutination of red cells may occur\n2. Hyperglycemia exaggerates neurologic deficits after cerebral ischemia",
+                    "doseStr": "50 ml of D50 contains 25 gms glucose\nPediatric dose: 2-4 ml/kg of D25",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 100,
+                    "useStr": "1. Treat hypoglycemia\n2. Glucose plus insulin for hyperkalemia"
+                },
+                {
+                    "nameStr": "Digoxin",
+                    "actionStr": "1. Increase in myocardial contractility\n2. Decrease in AV conduction",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.125,0.25,0.375,0.5],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. Arrhythmias\n2. GI upset\n3. Blurred vision\n4. Toxicity potentiated by hypokalemia, hypomagnesemia, hypercalcemia\n5. Cautious use in patients with WPW",
+                    "doseStr": "0.125 - 0.5 mg in divided doses",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.02,
+                    "useStr": "1. Heart failure\n2. Supraventricular tachyarrhythmias"
+                },
+                {
+                    "nameStr": "Diltiazem",
+                    "actionStr": "Calcium channel blocker:\n1. Slows conduction through SA and AV nodes\n2. Coronary and systemic vasodilation\n3. Reduces myocardial contractility",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,45,50],
+                    "bolusE100": 0.25,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. Mild negative inotropic effects \n2. Contraindicated in patients with WPW (Wolff-Parkinson-White), AV block, and beta-blockers\n3. Vasodilation may cause hypotension",
+                    "doseStr": "Bolus: 0.25 mg/kg IV over 2 min\nInfusion: 5-15 mg/hr",
+                    "effect": "hr",
+                    "effectMagnitude": -10,
+                    "effectSec": 900,
+                    "infusionDoses": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],
+                    "infusionE100": 10,
+                    "infusionUnit": "mg/hr",
+                    "overdose": 2,
+                    "useStr": "1. Coronary spasm, myocardial ischemia\n2. Rate control in atrial fib/flutter and SVT"
+                },
+                {
+                    "nameStr": "Diphenhydramine",
+                    "actionStr": "1. Antagonism of histamine (H1) receptor\n2. Anticholinergic effect\n3. Sedation",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,5,10,15,20,25,30,35,40,45,50],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. Hypotension\n2. Tachycardia\n3. Dizziness\n4. Seizures",
+                    "doseStr": "Adult dose: 25 - 50 mg IV\nPediatric dose: 0.25-0.5 mg/kg",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 5,
+                    "useStr": "1. Treat allergic reactions\n2. Sedation"
+                },
+                {
+                    "nameStr": "Dobutamine",
+                    "actionStr": "Beta agonist",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [],
+                    "bolusE100": 0,
+                    "bolusUnit": "none",
+                    "complicationStr": "1. Hypertension\n2. Arrhythmias\n3. Myocardial ischemia",
+                    "doseStr": "2.5 - 15 mcg/kg per min",
+                    "effect": "bp",
+                    "effectMagnitude": 10,
+                    "effectSec": 300,
+                    "infusionDoses": [0,1,2,2.5,3,4,5,6,7,8,9,10,11,12,13,14,15],
+                    "infusionE100": 20,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 1,
+                    "useStr": "Treat heart failure"
+                },
+                {
+                    "nameStr": "Dopamine",
+                    "actionStr": "1-5 mcg/kg/min : Primarily dopaminergic -> increase renal blood flow\n5-10 mcg/kg/min : Primarily beta stimulation\n> 15 mcg/kg/min : Beta and alpha effects",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [],
+                    "bolusE100": 0,
+                    "bolusUnit": "none",
+                    "complicationStr": "1. Hypertension\n2. Arrhythmias\n3. Myocardial ischemia",
+                    "doseStr": "2.5 - 15 mcg/kg per min",
+                    "effect": "bp",
+                    "effectMagnitude": 10,
+                    "effectSec": 300,
+                    "infusionDoses": [0,1,2,2.5,3,4,5,6,7,8,9,10,11,12,13,14,15],
+                    "infusionE100": 10,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 1,
+                    "useStr": "1. Treat heart failure\n2. Treat hypotension\n3. Treat oliguria"
+                },
+                {
+                    "nameStr": "Doxacurium",
+                    "actionStr": "It is a benzylisoquinolium diester. It has a longer duration of action than pancuronium and fewer cardiovascular side-effects. Hepatic metabolism(75%) and renal excretion(25%).\n2. About 25% is eliminated via the kidney",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,2,3,4,5],
+                    "bolusE100": 0.025,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. Does not cause histamine release\n2. No vagolytic or sympathomimetic effects",
+                    "doseStr": "0.025 mg/kg lasts about 90 minutes",
+                    "effect": "nmb",
+                    "effectMagnitude": 10,
+                    "effectSec": 5400,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Doxacurium is a competitive neuromuscular blocker."
+                },
+                {
+                    "nameStr": "Droperidol",
+                    "actionStr": "Droperidol is a butyrophenone.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1.25,2.5,3.75,5],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. Patients sedated with droperidol can appear calm, but may have an intense feeling of impending doom. This response decreases the utility of droperidol as a premedicant.\n2. Mmay cause delayed awakening or postoperative dizziness.\n3. Can cause prolongation of the QT interval and fatal arrhythmias.",
+                    "doseStr": "Anti-emetic dose: 1.25 - 2.5 mg IV",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.2,
+                    "useStr": "Tranquilizer, anti-emetic"
+                },
+                {
+                    "nameStr": "Edrophonium",
+                    "actionStr": "Edrophonium is an acetylcholinesterase inhibitor and has quicker onset than neostigmine.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,70,80,90,100],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. The muscarinic effects of edrophonium must be blocked with atropine or glycopyrrolate to avoid bradycardia.\n2. Edrophonium (0.5 mg/kg) mixed with atropine (0.007 mg/kg) and administered concomitantly usually causes minimal changes in heart rate.",
+                    "doseStr": "0.5 - 1.0 mg/kg",
+                    "effect": "nmb",
+                    "effectMagnitude": -0.5,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 3,
+                    "useStr": "Sustained antagonism of neuromuscular blockade occurs with adequate doses."
+                },
+                {
+                    "nameStr": "Ephedrine",
+                    "actionStr": "Direct: alpha and beta adrenergic stimulation\nIndirect: causes norepinephrine release from nerve terminals",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,2.5,3,4,5,10,15,20,25],
+                    "bolusE100": 0.05,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Hypertension\nArrhythmias\nMyocardial ischemia\nMinimal effect on uterine blood flow\nTachyphylaxis may occur",
+                    "doseStr": "5 - 10 mg IV boluses",
+                    "effect": "bp",
+                    "effectMagnitude": 10,
+                    "effectSec": 300,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Treat hypotension"
+                },
+                {
+                    "nameStr": "Epinephrine",
+                    "actionStr": "Alpha and beta adrenergic stimulation",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,100,200,300,400,500,1000],
+                    "bolusE100": 0.3,
+                    "bolusUnit": "mcg",
+                    "complicationStr": "Hypertension\nArrhythmias\nMyocardial ischemia",
+                    "doseStr": "Bolus:\nCardiac arrest: 500-1000 mcg (0.5-1.0 mg) IV boluses\nAnaphylaxis: 10 - 100 mcg IV boluses\nInfusion:\n.01-.03 mcg/kg/min Primarily beta stimulation\n.03-.15 mcg/kg/min Mixed alpha and beta stimulation\n.15-.3 mcg/kg/min Primarily alpha stimulation",
+                    "effect": "bp",
+                    "effectMagnitude": 10,
+                    "effectSec": 300,
+                    "infusionDoses": [0,0.01,0.02,0.03,0.04,0.05,0.1,0.15,0.2,0.3],
+                    "infusionE100": 10,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 3,
+                    "useStr": "Cardiac arrest, Anaphylaxis, Extreme hypotension, Bronchospasm"
+                },
+                {
+                    "nameStr": "Esmolol",
+                    "actionStr": "Selective beta-1 blockade with rapid onset and very short duration of action",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,70,80,90,100],
+                    "bolusE100": 0.5,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Bradycardia\nAV block\nHypotension\nCardiac failure - use with caution in patients with CHF\nBronchospasm in asthmatics\nRapidly metabolized in the blood by an esterase. Does not interact with other drugs with esters.\nThe elimination half-life is only 9 minutes and in most cases of acute toxicity the effects resolve on discontinuation of the infusion.",
+                    "doseStr": "500 mcg/kg loading dose followed by 50 - 200 mcg/kg/min infusion",
+                    "effect": "hr",
+                    "effectMagnitude": -5,
+                    "effectSec": 300,
+                    "infusionDoses": [0,20,40,60,80,100,120,140,160,180,200],
+                    "infusionE100": 100,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 2,
+                    "useStr": "Treat supraventricular tachycardia - atrial fibrillation, atrial flutter, or noncompensatory sinus tachycardia"
+                },
+                {
+                    "nameStr": "Etomidate",
+                    "actionStr": "The molecular structure of etomidate is an imidazole and is unrelated to the structure of any other intravenous anesthetic.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30],
+                    "bolusE100": 0.2,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Myotonic activity on induction\nThe lack of cardiovascular effects makes it useful for patients with coronary artery disease\nPain on injection\nAdrenal suppression with infusions",
+                    "doseStr": "Induction dose: 0.2 - 0.3 mg/kg",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 300,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "The intravenous injection of etomidate produces rapid loss of consciousness. Drug redistribution appears to be responsible for the short duration of action. The drug is also inactivated rapidly by liver enzymes and to a lesser degree by plasma esterases."
+                },
+                {
+                    "nameStr": "Famotidine",
+                    "actionStr": "Histamine receptor (H2) blocker leading to a reduction in gastric acid production",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,2,4,6,8,10,12,14,16,18,20],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "May cause confusion",
+                    "doseStr": "20 mg IV or PO",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Reduction of gastric acid production and raise gastric pH"
+                },
+                {
+                    "nameStr": "Fentanyl",
+                    "actionStr": "Fentanyl is a synthetic narcotic with a rapid redistribution phase. Due to its greater lipid solubility than morphine, fentanyl has faster CNS penetration, more rapid onset and shorter duration of action.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,25,50,100,150,200,250,300,400,500,1000],
+                    "bolusE100": 5,
+                    "bolusUnit": "mcg",
+                    "complicationStr": "Rapid injection of large doses can cause truncal rigidity or seizures\nIncreases in biliary tract pressure is rarely a problem",
+                    "doseStr": "Analgesia: 1 to 5 mcg/kg",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 900,
+                    "infusionDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "infusionE100": 5,
+                    "infusionUnit": "mcg/min",
+                    "overdose": 100,
+                    "useStr": "Analgesia and sedation"
+                },
+                {
+                    "nameStr": "Flumazenil",
+                    "actionStr": "Its structure is an imidazobenzodiazepine. It reverses the sedative, amnestic, hypnotic, and respiratory depressant effects of midazolam. It has a shorter half-life than midazolam so resedation can occur following its use.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,1.2,1.4,1.6,1.8,2],
+                    "bolusE100": 0.004,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Resedation can occur usually within one hour of Flumazenil administration.\nToo rapid or too large dose can cause excitation.",
+                    "doseStr": "Incremental doses of 0.2 mg up to 1.0 mg",
+                    "effect": "mic",
+                    "effectMagnitude": -0.2,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0.1,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Flumazenil is a specific competitive benzodiazepine antagonist."
+                },
+                {
+                    "nameStr": "Furosemide",
+                    "actionStr": "Diuretic - Increases excretion of sodium, potassium, chloride, phosphate, calcium, and water.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,10,15,20],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Electrolyte imbalance\nHyperglycemia\nHyperuricemia\nDehydration\nDeafness",
+                    "doseStr": "10 - 40 mg initial dose",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 5,
+                    "useStr": "Treat edema\nIntracranial hypertension\nHypercalcemia"
+                },
+                {
+                    "nameStr": "Gentamicin",
+                    "actionStr": "Covers gram positive and gram negative aerobes including methicillin resistant Staph.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,70,80,90,100,110,120],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "May cause renal damage or deafness\nMay prolong neuromuscular blockade or cause weakness in patients with myasthenia",
+                    "doseStr": "60-120 mg IV",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 10,
+                    "useStr": "Gentamicin plus ampicillin treats infection and is a recommended SBE prophylactic antibiotic combination for patients with a heart murmur undergoing urologic and GI surgery."
+                },
+                {
+                    "nameStr": "Glycopyrrolate",
+                    "actionStr": "Competitive blockade of acetylcholine at muscarinic receptors",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,1,2,2.5,3,4,5],
+                    "bolusE100": 0.005,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Tachyarrhythmias, AV dissociation, or PVC's\nLow dose may cause paradoxical bradycardia\nDry mouth\nUrinary retention\nDoes not cross blood-brain barrier or placenta",
+                    "doseStr": "0.1 - 0.2 mg IV bolus for bradycardia",
+                    "effect": "hr",
+                    "effectMagnitude": 5,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.1,
+                    "useStr": "Adjunct to neuromuscular reversal agent - especially with neostigmine\nTreat bradycardia\nAntisialogogue\nDecrease GI motility"
+                },
+                {
+                    "nameStr": "Heparin",
+                    "actionStr": "Blocks conversion of prothrombin and other clotting factors\nDecreases platelet agglutination",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,100,200,300,400,500,1000,2000,3000,4000,5000,10000],
+                    "bolusE100": 1,
+                    "bolusUnit": "units",
+                    "complicationStr": "Spontaneous hemorrhage\nThrombocytopenia\nAllergic reactions",
+                    "doseStr": "5000 - 10,000 U",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 500,
+                    "useStr": "Anticoagulation"
+                },
+                {
+                    "nameStr": "Hydralazine",
+                    "actionStr": "Direct acting vasodilator",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,2.5,5,10,15,20],
+                    "bolusE100": 0.1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Reflex tachycardia is common\nMay cause hypotension\nLupus or hemolytic anemia",
+                    "doseStr": "Adult dose: 2.5 - 5 mg IV\nPediatric dose: 0.1-0.2 mg/kg",
+                    "effect": "bp",
+                    "effectMagnitude": -5,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 5,
+                    "useStr": "Treat hypertension"
+                },
+                {
+                    "nameStr": "Hydrocortisone",
+                    "actionStr": "Anti-inflammatory\nStimulation of gluconeogenesis\nMineralocorticoid effect",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,70,80,90,100],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "May cause adrenal suppression\nDelayed wound healing\nOsteoporosis\nElectrolyte imbalance\nCNS disturbances - depression, psychosis",
+                    "doseStr": "100 mg",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 10,
+                    "useStr": "Adrenal insufficiency\nInflammation and allergy\nSeptic shock\nBrain injury"
+                },
+                {
+                    "nameStr": "Insulin",
+                    "actionStr": "Stimulates glucose transport into cells\nShifts potassium into cells",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20],
+                    "bolusE100": 1,
+                    "bolusUnit": "units",
+                    "complicationStr": "Hypoglycemia\nAllergic reactions",
+                    "doseStr": "5 - 10 Units IV",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20],
+                    "infusionE100": 0,
+                    "infusionUnit": "units/hr",
+                    "overdose": 1,
+                    "useStr": "Treat hyperglycemia\nTreat hyperkalemia"
+                },
+                {
+                    "nameStr": "Ipratropium",
+                    "actionStr": "Anticholinergic bronchodilator - acts locally by preventing increases in cyclic GMP\nNot well absorbed systemically",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "bolusE100": 1,
+                    "bolusUnit": "puff",
+                    "complicationStr": "Dry mouth\nCough\nPalpitations\nNervousness, dizziness\nNausea",
+                    "doseStr": "2 inhalations (36 mcg) QID\n8-10 inhalations if intubated",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 300,
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Maintenance treatment of bronchospasm from chronic bronchitis and emphysema\nNot indicated for the initial treatment of acute episodes of bronchitis where rapid response is required"
+                },
+                {
+                    "nameStr": "Isoetharine",
+                    "actionStr": "Beta agonist (beta-1 and beta-2)",
+                    "adminBolusAmount": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "infusionDoses": [],
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusE100": 0.02,
+                    "bolusUnit": "puff",
+                    "complicationStr": "Tachycardia\nArrhythmias\nHypertension\nNausea and vomiting\nFewer cardiovascular side effects with beta-2 selective agents than non-selective beta-agonists\nTachyphylaxis can occur",
+                    "doseStr": "Metered dose: 2-3 puffs (0.34 mg/puff)\nIntubated: 8-10 puffs\nAerosolized solution: 0.25 - 0.5 ml of .5 - 1%",
+                    "effect": "hr",
+                    "effectMagnitude": 10,
+                    "effectSec": 300,
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.4,
+                    "useStr": "Treat bronchospasm"
+                },
+                {
+                    "nameStr": "Ketamine",
+                    "actionStr": "Ketamine is an arylcyclohexylamine and is similar to phencyclidine (PCP) in structure. It has potent analgesic and sedative properties.\nKetamine acts rapidly on the CNS. Redistribution of the drug probably plays a major role in recovery of consciousness, and liver metabolism is important for eventual clearance of the drug.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,2,4,6,8,10,20,30,40,50,60,70,80,90,100,150,200],
+                    "bolusE100": 2,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Peripheral vasoconstriction\nIncreased heart rate\nIncreases pulmonary vascular resistance and PAP\nRelaxes bronchial smooth muscle\nContraindicated in patients with poorly controlled hypertension, unstable angina, myocardial infarction, aneurysms, or heart failure\nContraindicated in patients with elevated ICP\nRaises intraocular pressure\nEmergence delirium - recover in quiet, low-lit room, benzodiazepines reduce delirium",
+                    "doseStr": "Light sedative dose: 0.5 - 2 mg/kg\nDeep sedative dose: 5 - 10 mg/kg",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 300,
+                    "infusionDoses": [0,2,4,6,8,10,20,30,40,50,60,70,80,90,100],
+                    "infusionE100": 50,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 10,
+                    "useStr": "Analgesia\nSedation"
+                },
+                {
+                    "nameStr": "Ketorolac",
+                    "actionStr": "Ketorolac is a nonsteroidal anti-inflammatory agent used as a moderate strength analgesic. As with other NSAIDs, ketorolac inhibits prostaglandin synthesis.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,10,15,20,30],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Platelet dysfunction\nGastric ulcers\nRenal dysfunction",
+                    "doseStr": "15-30 mg",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Useful for mild to moderate pain or as an adjunct to narcotics for severe pain."
+                },
+                {
+                    "nameStr": "Labetalol",
+                    "actionStr": "Selective alpha-1 blockade and nonselective beta-blockade",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,10,15,20,30,40],
+                    "bolusE100": 0.2,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Bradycardia\nAV block\nHypotension\nCardiac failure - use with caution in patients with CHF\nBronchospasm in asthmatics",
+                    "doseStr": "Bolus: 5-10 mg increments to 80 mg dose\nInfusion: 20-2500 mcg/min",
+                    "effect": "bp",
+                    "effectMagnitude": -10,
+                    "effectSec": 900,
+                    "infusionDoses": [0,20,40,60,80,100,200,400,600,800,1000,1200,1400,1600,1800,2000,2500],
+                    "infusionE100": 200,
+                    "infusionUnit": "mcg/min",
+                    "overdose": 3,
+                    "useStr": "Treat hypertension\nControlled hypotension"
+                },
+                {
+                    "nameStr": "Lidocaine",
+                    "actionStr": "Antiarrhythmic effect\nSedation\nNeural blockade",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,80,100,200],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Dizziness, disorientation, seizures\nHypotension\nHeart block",
+                    "doseStr": "1 mg/kg IV bolus",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20],
+                    "infusionE100": 0,
+                    "infusionUnit": "mg/min",
+                    "overdose": 5,
+                    "useStr": "Adjunct to general anesthesia\nCough suppression\nTreat ventricular arrhythmias"
+                },
+                {
+                    "nameStr": "Magnesium",
+                    "actionStr": "Electrolyte",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,2],
+                    "bolusE100": 0.01,
+                    "bolusUnit": "gm",
+                    "complicationStr": "Muscle weakness\nRespiratory paralysis and heart block at high levels\nNeonatal weakness and respiratory depression",
+                    "doseStr": "Hypomagnesemia: 0.5-1 gm\nPreeclampsia/eclampsia: 4 gm load then infusion at 1-2 gm/hr",
+                    "effect": "bp",
+                    "effectMagnitude": -5,
+                    "effectSec": 300,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.1,
+                    "useStr": "Treat known hypomagnesemic states\nTreatment for preeclampsia and eclampsia - mild central nervous system depressant, vasodilator, and relaxes myometrium\nTreatment of choice for Torsade de Pointes"
+                },
+                {
+                    "nameStr": "Mannitol",
+                    "actionStr": "Osmotic diuretic\nDecrease in brain size",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,2.5,5,7.5,10,12.5,15,20,25],
+                    "bolusE100": 1,
+                    "bolusUnit": "gm",
+                    "complicationStr": "Transient increase in intravascular volume\nMay cause pulmonary edema or arterial hypertension\nMay cause vasodilation and hypotension",
+                    "doseStr": "12.5 - 25 gm over 10 min",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 4,
+                    "useStr": "Treat intracranial hypertension\nDiuresis"
+                },
+                {
+                    "nameStr": "Meperidine",
+                    "actionStr": "Meperidine is an opioid. It is more lipid soluble and more protein bound than morphine.\nClearance of meperidine from the body is largely dependent on hepatic biotransformation. The high hepatic extraction ratio makes its elimination dependent on hepatic blood flow.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,2,4,6,8,10,20,40,60,80,100],
+                    "bolusE100": 8,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Meperidine should not be administered to patients taking MAO Inhibitors since it can cause a potentially fatal reaction leading to hyperpyrexia, tachycardia, hypertension or hypotension, seizures and coma.\nNormeperidine, a major metabolite, can cause seizures.",
+                    "doseStr": "0.25 to 1 mg/kg",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 80,
+                    "useStr": "Opioid analgesic"
+                },
+                {
+                    "nameStr": "Metaproterenol",
+                    "actionStr": "Beta agonist (mainly beta-2)",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "bolusE100": 0.02,
+                    "bolusUnit": "puff",
+                    "complicationStr": "Arrhythmias\nHypertension\nNausea and vomiting",
+                    "doseStr": "Metered dose: 2-3 puffs (0.65 mg/puff)\nIntubated: 8-10 puffs",
+                    "effect": "hr",
+                    "effectMagnitude": 10,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.4,
+                    "useStr": "Treat bronchospasm"
+                },
+                {
+                    "nameStr": "Methadone",
+                    "actionStr": "Methadone is an opioid which is more lipid soluble than morphine, but has a very slow rate of onset.\nClearance of methadone from the body is extremely slow and repeated doses will accumulate.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,2,4,6,8,10,12,14,16,18,20],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Very long duration of action with dose dependent respiratory depression",
+                    "doseStr": "Analgesic dose: 10 to 20 mg",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 10,
+                    "useStr": "Long-acting opioid analgesic"
+                },
+                {
+                    "nameStr": "Methohexital",
+                    "actionStr": "Methohexital is a barbiturate, similar to thiopental in structure, but has a methyl group attached to the N-1 in the ring.\nMethohexital produces a rapid loss of consciousness similar to thiopental and recovery is largely due to redistribution from the brain to other tissues. Clearance of methohexital is 3-4 times that of thiopental and recovery of psychomotor function may also be faster. However, since the elimination half-life is 10 hours, repeated doses and infusions can result in slow recovery.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,70,80,90,100,120,140,160,180,200],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Must be prepared to support ventilation\nSevere hypotension may occur, especially in hypovolemic patients\nAllergic reactions\nAvoid use in patients with acute intermittent porphyria",
+                    "doseStr": "0.2 - 0.5 mg/kg for sedation",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 300,
+                    "infusionDoses": [0,1,2,3,4,5,6,7,8,9,10,15,20],
+                    "infusionE100": 100,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 10,
+                    "useStr": "Anesthetic agent (unconsciousness, analgesia, amnesia)"
+                },
+                {
+                    "nameStr": "Methylprednisolone",
+                    "actionStr": "1. Anti-inflammatory\n2. 25 times ore glucocorticoid activity than hydrocortisone\n3. Minimal mineralocorticoid effect",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,2,4,6,8,10,20,30,40],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "1. May cause adrenal suppression\n2. Delayed wound healing\n3. Osteoporosis\n4. Electrolyte imbalance\n5. CNS disturbances - depression, psychosis",
+                    "doseStr": "10-40 mg",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.5,
+                    "useStr": "1. Adrenal insufficiency\n2. Inflammation and allergy\n3. Septic shock\n4. Brain injury"
+                },
+                {
+                    "nameStr": "Metoclopramide",
+                    "actionStr": "Improves gastric emptying by increasing gastric and small intestinal motility\nIncreases lower esophageal sphincter tone",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,2,4,6,8,10,12,14,16,18,20],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Extrapyramidal symptoms (rare)",
+                    "doseStr": "10 mg IV",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.5,
+                    "useStr": "Prophylaxis for patients at risk for pulmonary aspiration\nAntiemetic"
+                },
+                {
+                    "nameStr": "Metoprolol",
+                    "actionStr": "Selective beta-1 blockade\nBeta-2 blockade at high doses",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,2.5,3,4,5,6,7,8,9,10,15],
+                    "bolusE100": 0.05,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Bradycardia\nCardiac failure - use with caution in patients with CHF\nBronchospasm",
+                    "doseStr": "5 - 15 mg IV",
+                    "effect": "hr",
+                    "effectMagnitude": -5,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.5,
+                    "useStr": "Treat hypertension\nMyocardial ischemia"
+                },
+                {
+                    "nameStr": "Midazolam",
+                    "actionStr": "Midazolam is a benzodiazepine. It is much more water soluble than diazepam or lorazepam and has a faster onset time. Midazolam can be administered by intravenous, intramuscular, oral, sublingual, nasal and rectal routes although bitter taste makes the sublingual route difficult.\nMidazolam is extensively biotransformed by hepatic enzymes and is then conjugated and excreted in the urine. Clearance of midazolam is approximately 10 times that of diazepam. Typical elimination half-life is 2-4 hours. Aging does not appear to change the pharmacokinetics of midazolam.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5],
+                    "bolusE100": 0.05,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Respiratory depression - greater than with diazepam\nPotential interactions with other CNS depressants\nPsychomotor impairment for hours",
+                    "doseStr": "0.01 - 0.05 mg/kg (less for elderly)",
+                    "effect": "mic",
+                    "effectMagnitude": 0.5,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Sedation and amnesia"
+                },
+                {
+                    "nameStr": "Milrinone",
+                    "actionStr": "Phosphodiesterase inhibitor",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Ventricular arrhythmias\nHypotension from vasodilation\nHeadache\nHypokalemia\nTremor\nThrombocytopenia",
+                    "doseStr": "Bolus loading dose: 50 mcg/kg IV load over 10 min, follow with infusion\nInfusion: 0.375 - 0.75 mcg/kg/min infusion\nHalf loading dose may give adequate inotropic response with minimal vasodilation",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0],
+                    "infusionE100": 0,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 0.5,
+                    "useStr": "Inotropy and vasodilation for management of ventricular failure"
+                },
+                {
+                    "nameStr": "Mivacurium",
+                    "actionStr": "Mivacurium is a benzylisoquinolinium compound similar to atracurium. It has a very shorter duration of action due to rapid elimination by plasma cholinesterase.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20],
+                    "bolusE100": 0.1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Can cause histamine release leading to cardiovascular instability although the recommended intubating dose usually does not cause significant hemodynamic effects.",
+                    "doseStr": "0.1 mg/kg will abolish the twitch in 2-3 minutes, with effective blockade for 15-20 minutes and almost complete recovery in 30 minutes",
+                    "effect": "nmb",
+                    "effectMagnitude": 1,
+                    "effectSec": 900,
+                    "infusionDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "infusionE100": 6,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 1,
+                    "useStr": "Competitive neuromuscular blocker"
+                },
+                {
+                    "nameStr": "Morphine",
+                    "actionStr": "Morphine is an opioid with slower rate of onset and longer duration than fentanyl.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,8,10,12,14,16,18,20],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Morphine can cause significant vasodilation by decreasing sympathetic tone and histamine release.\nDose dependent respiratory depression\nNausea and vomiting\nIncreases in biliary tract pressure is rarely a problem.",
+                    "doseStr": "0.1 mg/kg",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 4500,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Opioid analgesic"
+                },
+                {
+                    "nameStr": "Naloxone",
+                    "actionStr": "Opioid effects can be reversed by opioid antagonists such as naloxone. It antagonizes opioid effects mediated by all receptor subtypes and is primarily used to reverse respiratory depression. The duration of action is short in comparison to the narcotics, therefore, renarcotization with recurrence of significant respiratory depression can occur.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.04,0.08,0.1,0.2,0.3,0.4],
+                    "bolusE100": 0.004,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Significant effects documented with or without previous narcotic-analgesic administration\nArterial hypertension\nPulmonary edema\nRuptured cerebral aneurysms\nDysrhythmias\nCardiac arrest",
+                    "doseStr": "1 mcg/kg or 0.04 to 0.08 mg increments in 70 kg adult",
+                    "effect": "none",
+                    "effectMagnitude": -0.3,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "overdose": 0.04,
+                    "useStr": "Opioid reversal"
+                },
+                {
+                    "nameStr": "Neostigmine",
+                    "actionStr": "Neostigmine is an acetylcholinesterase inhibitor and has slower onset than edrophonium. Sustained antagonism of neuromuscular blockade occurs with adequate doses.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,1,1.5,2,2.5,3,4,5],
+                    "bolusE100": 0.05,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Renal failure delays excretion of neostigmine as much as pancuronium so recurarization should not occur.\nThe muscarinic effects of neostigmine must be blocked with atropine or glycopyrrolate to avoid bradycardia.\nNeostigmine (0.04 mg/kg) mixed with glycopyrrolate (0.006 mg/kg) and administered concomitantly usually causes minimal changes in heart rate.",
+                    "doseStr": "2.5 - 5.0 mg in 70 kg patient",
+                    "effect": "nmb",
+                    "effectMagnitude": -0.5,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.5,
+                    "useStr": "Antagonism of neuromuscular blockade"
+                },
+                {
+                    "nameStr": "Nicardipine",
+                    "actionStr": "Calcium channel blocker\nArterial vasodilation\nNo detrimental effect on SA or AV node",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [],
+                    "bolusE100": 0,
+                    "bolusUnit": "none",
+                    "complicationStr": "May produce hypotension, tachycardia\nTitrate carefully in patients with aortic stenosis, congestive heart failure, or on beta-blockers\nLess than 1% of patients with coronary artery disease have exacerbation of angina\nHeadache\nNausea\nNicardipine is not compatible with lactated ringer's solution.",
+                    "doseStr": "Start titration at 5 mg/hr, may increase by 2.5 mg/hr increments every 15 min to maximum of 15 mg/hr.",
+                    "effect": "bp",
+                    "effectMagnitude": -10,
+                    "effectSec": 900,
+                    "infusionDoses": [0,1,2,3,4,5,7.5,10,12.5,15],
+                    "infusionE100": 10,
+                    "infusionUnit": "mg/hr",
+                    "overdose": 1,
+                    "useStr": "Control of hypertension"
+                },
+                {
+                    "nameStr": "Nifedipine",
+                    "actionStr": "Calcium channel blocker\nCoronary and systemic vasodilation",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Mild negative inotropic effects\nVasodilation may cause hypotension\nMay cause reflex tachycardia\nGI upset",
+                    "doseStr": "10 - 30 mg p.o.",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Coronary spasm\nMyocardial ischemia\nMay be useful in asymmetric septal hypertrophy"
+                },
+                {
+                    "nameStr": "Nitroglycerin",
+                    "actionStr": "Smooth muscle relaxation\nCoronary vasodilation\nVenodilation --> reduces preload",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,20,40,60,80,100,200,400],
+                    "bolusE100": 4,
+                    "bolusUnit": "mcg",
+                    "complicationStr": "Hypotension\nReflex tachycardia\nHeadache",
+                    "doseStr": "1 - 2 mcg/kg per min infusion",
+                    "effect": "bp",
+                    "effectMagnitude": -5,
+                    "effectSec": 300,
+                    "infusionDoses": [0,0.25,0.5,1,2,3,4],
+                    "infusionE100": 1,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 40,
+                    "useStr": "Treat myocardial ischemia\nEsophageal spasm\nSystemic or pulmonary hypertension\nBiliary colic"
+                },
+                {
+                    "nameStr": "Nitroprusside",
+                    "actionStr": "Smooth muscle relaxation\nArterial vasodilation --> reduces afterload",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [],
+                    "bolusE100": 0,
+                    "bolusUnit": "none",
+                    "complicationStr": "Hypotension\nReflex tachycardia\nThyroid dysfunction\nPotential for cyanide toxicity - especially with liver or renal disease or vitamin B12 deficiency",
+                    "doseStr": "0.1 mcg/kg per min infusion initially, then titrated to effect 10 mcg/kg per min maximum",
+                    "effect": "bp",
+                    "effectMagnitude": -10,
+                    "effectSec": 300,
+                    "infusionDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.8,1,1.5,2,3,4,5,6,7,8,9,10],
+                    "infusionE100": 1,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 1,
+                    "useStr": "Treat hypertension\nControlled hypotension\nAfterload reduction in CHF\nPulmonary hypertension"
+                },
+                {
+                    "nameStr": "Norepinephrine",
+                    "actionStr": "Predominantly alpha stimulation with a lesser degree of beta-1 stimulation",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [],
+                    "bolusE100": 0,
+                    "bolusUnit": "none",
+                    "complicationStr": "Hypertension\nArrhythmias\nMyocardial ischemia",
+                    "doseStr": "0.05 - 0.3 mcg/kg per min",
+                    "effect": "bp",
+                    "effectMagnitude": 10,
+                    "effectSec": 300,
+                    "infusionDoses": [0,0.01,0.02,0.03,0.04,0.05,0.1,0.15,0.2,0.25,0.3],
+                    "infusionE100": 0.1,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 1,
+                    "useStr": "Treat extreme hypotension"
+                },
+                {
+                    "nameStr": "Octreotide",
+                    "actionStr": "Long acting octapeptide with pharmacologic actions similar to somatostatin\nDecreases cyclic AMP production\nInhibits mediator release from carcinoid tumor",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,100,150,200,250,300,350,400],
+                    "bolusE100": 1,
+                    "bolusUnit": "mcg",
+                    "complicationStr": "Elimination half-life is 1.5 hours",
+                    "doseStr": "Usual initial dose is 50 mcg SQ\nMedian maintenance dose is 450 mcg/day SQ\nDuring emergencies dose is 150 mcg IV",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 300,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 10,
+                    "useStr": "Control of flushing, diarrhea, and bronchoconstriction associated with carcinoid syndrome"
+                },
+                {
+                    "nameStr": "Ondansetron",
+                    "actionStr": "Selective blocker of serotonin 5-HT3 receptor.\nMetabolized by hepatic cytochrome P-450 enzymes.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Headache\nDizziness\nMusculoskeletal pain\nSedation",
+                    "doseStr": "For prevention of post-operative nausea and vomiting: 4 mg IV",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.24,
+                    "useStr": "Antiemetic"
+                },
+                {
+                    "nameStr": "Oxytocin",
+                    "actionStr": "Uterine contraction, milk release\nRenal, coronary, cerebral vasodilation",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "bolusE100": 1,
+                    "bolusUnit": "units",
+                    "complicationStr": "Uterine tetany or rupture\nFetal distress\nAnaphylaxis\nHypotension, tachycardia, arrhythmias",
+                    "doseStr": "10 U IM or IV infusion",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],
+                    "infusionE100": 0,
+                    "infusionUnit": "units/hr",
+                    "overdose": 1,
+                    "useStr": "Postpartum hemorrhage\nInduction of labor\nOxytocin challenge test"
+                },
+                {
+                    "nameStr": "Pancuronium",
+                    "actionStr": "The structure of pancuronium is a steroid with two acetylcholine-like fragments attached.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,2,3,4,5,6,7,8,9,10],
+                    "bolusE100": 0.1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Pancuronium is eliminated by hepatic metabolism and renal excretion. About 60-80% is eliminated via the kidney. Effects will be prolonged in patients with hepatic cirrhosis.\nDoes not cause histamine release\nDoes not block autonomic ganglia\nWeakly blocks cardiac muscarinic receptors - causes moderate increases in heart rate, a lesser increase in cardiac output, and little change in systemic vascular resistance",
+                    "doseStr": "0.06 - 0.08 mg/kg",
+                    "effect": "nmb",
+                    "effectMagnitude": 1,
+                    "effectSec": 5000,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.5,
+                    "useStr": "Competitive neuromuscular blocking agent"
+                },
+                {
+                    "nameStr": "Phentolamine",
+                    "actionStr": "Alpha blockade resulting in vasodilation",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5],
+                    "bolusE100": 0.05,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Hypotension\nReflex tachycardia\nArrhythmias\nHypoglycemia",
+                    "doseStr": "Bolus dose: 2 - 5 mg IV\nInfusion: 0.5 - 20 mcg/kg per min",
+                    "effect": "bp",
+                    "effectMagnitude": -10,
+                    "effectSec": 900,
+                    "infusionDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,2,3,4,5,6,8,10,12,14,16,18,20],
+                    "infusionE100": 20,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 0.5,
+                    "useStr": "Treat systemic and pulmonary hypertension"
+                },
+                {
+                    "nameStr": "Phenylephrine",
+                    "actionStr": "Alpha adrenergic stimulation leading to vasoconstriction",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,100,200,500],
+                    "bolusE100": 2,
+                    "bolusUnit": "mcg",
+                    "complicationStr": "Hypertension\nConstricted microcirculation and inadequate perfusion\nUterine contraction and vasoconstriction\nBradycardia",
+                    "doseStr": "Bolus dose: 50 - 100 mcg IV boluses\nInfusion: 1 - 10 mcg/kg/min",
+                    "effect": "bp",
+                    "effectMagnitude": 10,
+                    "effectSec": 400,
+                    "infusionDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,2,3,4,5,6,7,8,9,10],
+                    "infusionE100": 1,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 20,
+                    "useStr": "Treat hypotension from systemic vasodilation"
+                },
+                {
+                    "nameStr": "Pipecuronium",
+                    "actionStr": "The structure of pipecuronium is an aminosteroid dependent on renal clearance.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1,2,3,4,5,6,7,8,9,10],
+                    "bolusE100": 0.1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Pipecuronium is eliminated mainly by renal excretion.\nDoes not cause histamine release\nDoes not cause cardiovascular side-effects",
+                    "doseStr": "0.06 - 0.08 mg/kg",
+                    "effect": "nmb",
+                    "effectMagnitude": 1,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.5,
+                    "useStr": "Long-acting competitive neuromuscular blocking agent"
+                },
+                {
+                    "nameStr": "Procainamide",
+                    "actionStr": "Antiarrhythmic",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,100,200,300,400,500,600,700,800,900,1000],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "QRS widening and PR prolongation on the ECG\nHypotension from vasodilation\nIncreased ventricular response rate in atrial tachycardias\nAsystole with AV block\nSLE syndrome\nLiver damage",
+                    "doseStr": "10-50 mg/min until toxicity or desired effect up to 12 mg/kg",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "infusionE100": 0,
+                    "infusionUnit": "mg/min",
+                    "overdose": 20,
+                    "useStr": "Treat atrial and ventricular arrhythmias"
+                },
+                {
+                    "nameStr": "Propofol",
+                    "actionStr": "Propofol is diisopropylphenol and is only slightly soluble in water. It is formulated in a white, oil-in-water emulsion.\nIntravenous injection leads to a rapid loss of consciousness with minimal excitation. Termination of anesthetic effects are largely due to tissue redistribution. Propofol is metabolized by conjugation in the liver to inactive metabolites which are excreted by the kidneys.\nPropofol is an anesthetic agent. The therapeutic window for sedation is extremely narrow. Since it is so easy to produce deep sedation or general anesthesia, propofol is reserved for Monitored Anesthesia Care or sedation for intubated, mechanically ventilated patients only. Propofol is not approved for conscious sedation.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,70,80,90,100,120,140,160,180,200,250,300,350,400],
+                    "bolusE100": 2,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Must be prepared to support ventilation\nSevere hypotension may occur, especially in hypovolemic, elderly, or debilitated patients",
+                    "doseStr": "Induction dose: 2-2.5 mg/kg\nInfusion for anesthesia: 50-150 mcg/kg/min\nInfusion for sedation: 10-50 mcg/kg/min",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 900,
+                    "infusionDoses": [0,20,40,60,80,100,120,140,160,180,200,300,400],
+                    "infusionE100": 100,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 8,
+                    "useStr": "Anesthetic agent (Unconsciousness, analgesia, amnesia)"
+                },
+                {
+                    "nameStr": "Propranolol",
+                    "actionStr": "Beta blockade (beta-1 and beta-2)",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.25,0.5,1,2],
+                    "bolusE100": 0.05,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Bradycardia\nAV block\nCongestive heart failure and bronchospasm are unusual at low doses",
+                    "doseStr": "0.25 - 0.5 mg test dose, then 1 mg IV q min to desired effects",
+                    "effect": "hr",
+                    "effectMagnitude": -5,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.2,
+                    "useStr": "Atrial and ventricular arrhythmias\nHypertension\nMyocardial ischemia\nHyperthyroidism\nHypertrophic cardiomyopathy"
+                },
+                {
+                    "nameStr": "Protamine",
+                    "actionStr": "Binds heparin",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,10,20,30,40,50,100,200],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Myocardial depression and peripheral vasodilation leading to hypotension is common on rapid injection\nAllergic reactions\nTransient heparin reversal",
+                    "doseStr": "Approximately 1 mg/100 U heparin activity",
+                    "effect": "bp",
+                    "effectMagnitude": -10,
+                    "effectSec": 900,
+                    "infusionDoses": [0,1,2,3,4,5,6,7,8,9,10,15,20],
+                    "infusionE100": 0,
+                    "infusionUnit": "mg/min",
+                    "overdose": 50,
+                    "useStr": "Reverses the effects of heparin"
+                },
+                {
+                    "nameStr": "Remifentanil",
+                    "actionStr": "Remifentanil is rapidly metabolized by blood and tissue esterases. There is prompt recovery from continuous infusion, but other analgesics must be administered soon after the infusion is discontinued.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,70,80,90,100,120,140,160,180,200],
+                    "bolusE100": 1.5,
+                    "bolusUnit": "mcg",
+                    "complicationStr": "Muscle rigidity is common",
+                    "doseStr": "Bolus: 1.5 mcg/kg\nInfusion: 0.3 - 1 mcg/kg per min as part of a balanced anesthetic",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 1800,
+                    "infusionDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.2,1.4,1.6,1.8,2],
+                    "infusionE100": 1,
+                    "infusionUnit": "mcg/kg/min",
+                    "overdose": 10,
+                    "useStr": "Remifentanil is an ultra-short acting opioid."
+                },
+                {
+                    "nameStr": "Rocuronium",
+                    "actionStr": "Rocuronium is an intermediate-acting competitive neuromuscular blocking agent. It has an aminosteroid structure and similar duration of action as vecuronium, but it has more rapid onset.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,2,4,6,8,10,20,30,40,50,60,70,80,90,100],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Does not cause histamine release\nDoes not have cardiovascular side-effects",
+                    "doseStr": "Intubation dose: 0.6 - 1 mg/kg",
+                    "effect": "nmb",
+                    "effectMagnitude": 1,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 5,
+                    "useStr": "Competitive neuromuscular blocking agent"
+                },
+                {
+                    "nameStr": "Scopolamine",
+                    "actionStr": "Anticholinergic",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.8,1],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Crosses blood-brain barrier\nMay cause excitement or delirium\nTachycardia and hypertension",
+                    "doseStr": "0.3 - 0.6 mg",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.01,
+                    "useStr": "Antiemetic\nAntisialogogue\nSedation and amnesia"
+                },
+                {
+                    "nameStr": "SodiumBicarb",
+                    "actionStr": "Acid neutralization",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,5,10,15,20,25,30,35,40,45,50,100],
+                    "bolusE100": 1,
+                    "bolusUnit": "meq",
+                    "complicationStr": "Metabolic alkalosis\nHypercarbia\nHyperosmolar state\nSince HCO3- does not cross cell membranes and CO2 does, the administration of bicarbonate may actually make tissues more acidotic.",
+                    "doseStr": "Dose in mEq: 0.3 * (base deficit) * (wt in kg)",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 900,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 20,
+                    "useStr": "Treat metabolic acidosis\nTreat hyperkalemia"
+                },
+                {
+                    "nameStr": "SodiumCitrate",
+                    "actionStr": "Nonparticulate antacid",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30],
+                    "bolusE100": 1,
+                    "bolusUnit": "mL",
+                    "complicationStr": "Increases gastric volume",
+                    "doseStr": "Adult: 30 mL po",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Neutralize gastric acid prior to induction of anesthesia"
+                },
+                {
+                    "nameStr": "Succinylcholine",
+                    "actionStr": "Structure is two acetylcholine molecules linked together. A bolus dose typically provides a few minutes of paralysis. Pre-treatment with a subparalyzing dose of a competitive neuromuscular blocker prevents fasciculations from succinylcholine. Rapid hydrolysis by pseudocholinesterase accounts for the extremely brief duration of action.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,80,100,120,140,160,180,200],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Stimulates all cholinergic autonomic receptors\nCardiac dysrhythmias: bradycardia, junctional rhythms, ventricular dysrhythmias\nHyperkalemia - burns, trauma, nerve damage, neuromuscular disease, closed head injury, intraabdominal infections\nTransient increased intraocular pressure\nTransient increased intracranial pressure\nTransient increased intragastric pressure\nMuscle pains",
+                    "doseStr": "Intubation Dose: 1.0 mg/kg\nInfusion: 50 - 150 mcg/kg/min",
+                    "effect": "nmb",
+                    "effectMagnitude": 1,
+                    "effectSec": 200,
+                    "infusionDoses": [0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20],
+                    "infusionE100": 3,
+                    "infusionUnit": "mg/min",
+                    "overdose": 10,
+                    "useStr": "Depolarizing neuromuscular blocker"
+                },
+                {
+                    "nameStr": "Sufentanil",
+                    "actionStr": "Sufentanil is a synthetic opioid that is approximately 5 to 10 times more potent than fentanyl with a therapeutic index approximately 100 times greater than that of fentanyl. Sufentanil is quite lipophilic and has faster onset than fentanyl. It also has shorter elimination half-life.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,10,20,30,40,50,60,70,80,90,100,120,140,160,180,200],
+                    "bolusE100": 1,
+                    "bolusUnit": "mcg",
+                    "complicationStr": "Rapid injection of large doses can cause truncal rigidity or seizures",
+                    "doseStr": "Analgesic 1 to 2 mcg/kg\nAnesthetic 8 to 30 mcg/kg\nInfusion 1 mcg/kg/hr or less",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 900,
+                    "infusionDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],
+                    "infusionE100": 1,
+                    "infusionUnit": "mcg/min",
+                    "overdose": 50,
+                    "useStr": "Opioid analgesic"
+                },
+                {
+                    "nameStr": "Thiopental",
+                    "actionStr": "Thiopental is a highly lipophilic molecule that is only slightly ionized. This provides rapid onset following intravenous administration, typically within one arm-brain circulation time.\nThe intensity and duration of CNS effects is a function of dose. The short duration of action is primarily due to redistribution of thiopental from the brain to muscle and skin, rather than redistribution to body fat or metabolism.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,25,50,75,100,150,200,250,300,350,400,450,500],
+                    "bolusE100": 5,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Decreased stroke volume, cardiac output, blood pressure\nInduction dose invariably leads to apnea - Must be prepared to support ventilation\nSevere hypotension may occur, especially in hypovolemic, elderly, or debilitated patients\nAllergic reactions\nAvoid use in patients with acute intermittent porphyria",
+                    "doseStr": "Induction dose: 3-5 mg/kg",
+                    "effect": "mic",
+                    "effectMagnitude": 1,
+                    "effectSec": 300,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 10,
+                    "useStr": "Anesthetic induction agent (unconsciousness, analgesia, amnesia)"
+                },
+                {
+                    "nameStr": "Vancomycin",
+                    "actionStr": "Primarily inhibits bacterial cell wall synthesis",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],
+                    "bolusE100": 1,
+                    "bolusUnit": "gm",
+                    "complicationStr": "'Red-man syndrome: profound hypotension, wheezing, urticaria. Infrequently nephrotoxic or ototoxic.",
+                    "doseStr": "Adult dose: 1 gram IV over at least 30 minutes",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.05,
+                    "useStr": "Bactericidal against aerobic and anaerobic gram-positive microorganisms."
+                },
+                {
+                    "nameStr": "Vasopressin",
+                    "actionStr": "Naturally occurring antidiuretic hormone\nIn high dose vasopressin is a peripheral vasoconstrictor",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,5,10,20,40],
+                    "bolusE100": 0.06,
+                    "bolusUnit": "units",
+                    "complicationStr": "Coronary and renal vasoconstriction\nBronchial constriction\nNausea, intestinal cramps, desire to defecate\nUterine contractions",
+                    "doseStr": "Bolus dose for cardiac arrest: 40 Units IV for adults",
+                    "effect": "bp",
+                    "effectMagnitude": 10,
+                    "effectSec": 60,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Increase perfusion pressure in ventricular fibrillation and pulseless ventricular tachycardia in adults.\nMay be used as an alternative to the first or second dose of epinephrine for the treatment of refractory ventricular fibrillation."
+                },
+                {
+                    "nameStr": "Vecuronium",
+                    "actionStr": "Vecuronium is a steroid and has similar structure to pancuronium. It has a shorter duration of action than pancuronium and fewer cardiovascular side-effects.\nEliminated by hepatic metabolism and renal excretion.\nShort duration of action and cardiovascular stability allow high initial bolus to be used for rapid paralysis.",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,8,10,12,14,16,18,20],
+                    "bolusE100": 0.1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Cardiovascular stability\nDoes not cause histamine release\nDoes not block autonomic ganglia\nNo effect on cardiac muscarinic receptors\nCardiovascular stability",
+                    "doseStr": "Dose: 0.1 mg/kg, onset: 164(60-360) sec, duration: 42(25-69) min\nDose: 0.2 mg/kg, onset: 120(100-140) sec, duration: 74(51-106) min\nDose: 0.3 mg/kg, onset: 88(60-120) sec, duration: 111(62-208) min\nDose: 0.4 mg/kg, onset: 78(60-100) sec, duration: 115(35-192) min",
+                    "effect": "nmb",
+                    "effectMagnitude": 1,
+                    "effectSec": 1800,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 0.5,
+                    "useStr": "Competitive neuromuscular blocker"
+                },
+                {
+                    "nameStr": "Verapamil",
+                    "actionStr": "Calcium channel blockade\nNegative inotrope and chronotrope\nSystemic and coronary vasodilation",
+                    "adminBolusAmount": 0,
+                    "adminBolusFlag": false,
+                    "adminBolusLevel": 0,
+                    "adminBolusTime": 0,
+                    "adminInfusionFlag": false,
+                    "adminInfusionRate": 0,
+                    "bolusDoses": [0,1,2,3,4,5,6,7,8,9,10],
+                    "bolusE100": 1,
+                    "bolusUnit": "mg",
+                    "complicationStr": "Bradycardia\nAV block\nCongestive heart failure\nHypotension",
+                    "doseStr": "5 - 10 mg IV",
+                    "effect": "none",
+                    "effectMagnitude": 0,
+                    "effectSec": 300,
+                    "infusionDoses": [],
+                    "infusionE100": 0,
+                    "infusionUnit": "none",
+                    "overdose": 1,
+                    "useStr": "Treat Supraventricular tachycardia, atrial fib, atrial flutter"
+                }
+            ]
+        };
+
+        // Filter valid drugs (skip placeholder index 0)
+        const drugs = DrugInfo.Drugs.slice(1);
+
+        // Inject Game IV Fluids from ModelsAndFsm.js
+        drugs.push(
+            { nameStr: "Lactated Ringers", useStr: "Isotonic crystalloid fluid replacement, maintenance fluid, and mild shock resuscitation.", doseStr: "Maintenance: 2 - 4 ml/kg/hr\nResuscitation: 10 - 20 ml/kg bolus", actionStr: "Restores extracellular fluid volume and corrects mild metabolic acidosis.", complicationStr: "Volume overload, peripheral edema if given in excess.", overdose: 50 },
+            { nameStr: "Normal saline", useStr: "Isotonic crystalloid (0.9% NaCl) for volume resuscitation and hypovolemia.", doseStr: "Bolus: 10 - 20 ml/kg IV rapidly as needed for blood loss/hypotension.", actionStr: "Expands intravascular volume without shifting fluids into cells.", complicationStr: "Hyperchloremic metabolic acidosis with large volumes.", overdose: 50 },
+            { nameStr: "Albumin", useStr: "Colloid volume expander for significant blood loss or severe hypoalbuminemia.", doseStr: "5% Albumin: 10 - 20 ml/kg IV infusion", actionStr: "Colloid osmotic pressure draws fluid into the intravascular space.", complicationStr: "Allergic reactions, pulmonary edema if overloaded.", overdose: 20 },
+            { nameStr: "Packed red blood cells", useStr: "Treatment of acute hemorrhage, severe anemia, and low oxygen-carrying capacity.", doseStr: "10 - 15 ml/kg increases hemoglobin by roughly 2 g/dL.", actionStr: "Direct replacement of oxygen-carrying red blood cells.", complicationStr: "Transfusion reactions, hypothermia, coagulopathy with massive transfusion.", overdose: 30 }
+        );
+
+        // Helper to categorize drugs for quick filtering
+        function defaultCategory(drug) {
+            const name = drug.nameStr.toLowerCase();
+            if (name.match(/lactated|saline|albumin|blood|dextrose50|sodiumcitrate|sodiumbicarb/)) return 'fluids';
+            if (name.match(/epinephrine|norepinephrine|ephedrine|phenylephrine|esmolol|metoprolol|diltiazem|verapamil|nicardipine|hydralazine|nitroprusside|nitroglycerin|amiodarone|adenosine|atropine|dopamine|dobutamine|milrinone|digoxin|phentolamine|calcium|magnesium|vasopressin/)) return 'cardio';
+            if (name.match(/albuterol|ipratropium|isoetharine|metaproterenol|beclomethasone|aminophylline/)) return 'airway';
+            if (name.match(/fentanyl|sufentanil|alfentanil|remifentanil|morphine|meperidine|methadone|propofol|etomidate|ketamine|midazolam|thiopental|methohexital|droperidol|flumazenil|naloxone/)) return 'opioid';
+            if (name.match(/succinylcholine|rocuronium|vecuronium|cisatracurium|pancuronium|mivacurium|doxacurium|pipecuronium|neostigmine|edrophonium|dantrolene/)) return 'nmb';
+            if (name.match(/cefazolin|cefotetan|ampicillin|gentamicin|vancomycin/)) return 'antibiotic';
+            return 'other';
+        }
+
+        // ===== Editable groups (saved in this browser's localStorage) =====
+        const GROUP_KEY = 'anesLookupGroups';
+        const defaultGroupDefs = [
+            { id: 'cardio', label: 'Cardiovascular / BP' },
+            { id: 'airway', label: 'Airway / Bronchospasm' },
+            { id: 'opioid', label: 'Opioids & Sedatives' },
+            { id: 'nmb', label: 'NMBs & Reversal' },
+            { id: 'antibiotic', label: 'Antibiotics / Prophylaxis' },
+            { id: 'fluids', label: 'IV Fluids & Blood' }
+        ];
+        function buildDefaultGroups() {
+            return defaultGroupDefs.map(g => ({
+                id: g.id, label: g.label,
+                drugs: drugs.filter(d => defaultCategory(d) === g.id).map(d => d.nameStr)
+            }));
+        }
+        let groups = null;
+        try { groups = JSON.parse(localStorage.getItem(GROUP_KEY)); } catch (e) {}
+        if (!Array.isArray(groups)) groups = buildDefaultGroups();
+        function saveGroups() { try { localStorage.setItem(GROUP_KEY, JSON.stringify(groups)); } catch (e) {} }
+
+        // Label of the first group containing the drug (used for the small badge)
+        function getCategory(drug) {
+            const g = groups.find(g => g.drugs.includes(drug.nameStr));
+            return g ? g.label : 'other';
+        }
+        // Does the drug belong to the selected filter?
+        function inGroup(drug, id) {
+            if (id === 'all') return true;
+            const g = groups.find(g => g.id === id);
+            return !!g && g.drugs.includes(drug.nameStr);
+        }
+
+        function renderCategoryButtons() {
+            const wrap = document.getElementById('categoryFilters');
+            if (currentFilter !== 'all' && !groups.some(g => g.id === currentFilter)) currentFilter = 'all';
+            const on = 'cat-btn px-3 py-1.5 rounded-lg bg-blue-600 text-white transition-all shadow';
+            const off = 'cat-btn px-3 py-1.5 rounded-lg bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800 transition-all';
+            wrap.innerHTML = '';
+            [{ id: 'all', label: 'All Drugs' }, ...groups].forEach(g => {
+                const b = document.createElement('button');
+                b.dataset.cat = g.id;
+                b.textContent = g.label;
+                b.className = (g.id === currentFilter) ? on : off;
+                b.addEventListener('click', () => { currentFilter = g.id; renderCategoryButtons(); renderDrugs(); });
+                wrap.appendChild(b);
+            });
+            const e = document.createElement('button');
+            e.textContent = '✎ Edit groups';
+            e.className = 'px-3 py-1.5 rounded-lg bg-slate-800 text-amber-300 border border-slate-700 hover:bg-slate-700 transition-all';
+            e.addEventListener('click', openGroupEditor);
+            wrap.appendChild(e);
+        }
+
+        // Group editor
+        const groupModal = document.getElementById('groupModal');
+        const groupSelect = document.getElementById('groupSelect');
+        const groupDrugList = document.getElementById('groupDrugList');
+        const groupDrugSearch = document.getElementById('groupDrugSearch');
+        const groupCount = document.getElementById('groupCount');
+        let editingGroupId = null;
+
+        function currentGroup() { return groups.find(g => g.id === editingGroupId); }
+
+        function refreshGroupEditor() {
+            groupSelect.innerHTML = '';
+            groups.forEach(g => {
+                const o = document.createElement('option');
+                o.value = g.id; o.textContent = g.label;
+                groupSelect.appendChild(o);
+            });
+            groupSelect.value = editingGroupId || '';
+            groupDrugList.innerHTML = '';
+            const g = currentGroup();
+            if (!g) { groupDrugList.textContent = 'No groups yet. Click "+ New" to create one.'; groupCount.textContent = ''; return; }
+            const q = groupDrugSearch.value.toLowerCase().trim();
+            drugs.slice().sort((a, b) => a.nameStr.localeCompare(b.nameStr))
+                .filter(d => !q || d.nameStr.toLowerCase().includes(q))
+                .forEach(d => {
+                    const lab = document.createElement('label');
+                    lab.className = 'flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-800 cursor-pointer text-slate-200';
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.checked = g.drugs.includes(d.nameStr);
+                    cb.addEventListener('change', () => {
+                        if (cb.checked) { if (!g.drugs.includes(d.nameStr)) g.drugs.push(d.nameStr); }
+                        else g.drugs = g.drugs.filter(n => n !== d.nameStr);
+                        saveGroups();
+                        groupCount.textContent = g.drugs.length + ' drug(s) in this group';
+                    });
+                    lab.appendChild(cb);
+                    lab.appendChild(document.createTextNode(d.nameStr));
+                    groupDrugList.appendChild(lab);
+                });
+            groupCount.textContent = g.drugs.length + ' drug(s) in this group';
+        }
+
+        function openGroupEditor() {
+            if (!currentGroup()) editingGroupId = groups.length ? groups[0].id : null;
+            groupDrugSearch.value = '';
+            refreshGroupEditor();
+            groupModal.classList.remove('hidden');
+        }
+        function closeGroupEditor() {
+            groupModal.classList.add('hidden');
+            renderCategoryButtons();
+            renderDrugs();
+        }
+
+        groupSelect.addEventListener('change', () => { editingGroupId = groupSelect.value; refreshGroupEditor(); });
+        groupDrugSearch.addEventListener('input', refreshGroupEditor);
+        document.getElementById('grpNew').addEventListener('click', () => {
+            const name = (prompt('Name of the new group:') || '').trim();
+            if (!name) return;
+            const g = { id: 'g' + Date.now(), label: name, drugs: [] };
+            groups.push(g); editingGroupId = g.id; saveGroups(); refreshGroupEditor();
+        });
+        document.getElementById('grpRename').addEventListener('click', () => {
+            const g = currentGroup(); if (!g) return;
+            const name = (prompt('New name:', g.label) || '').trim();
+            if (!name) return;
+            g.label = name; saveGroups(); refreshGroupEditor();
+        });
+        document.getElementById('grpDelete').addEventListener('click', () => {
+            const g = currentGroup(); if (!g) return;
+            if (!confirm('Delete the group "' + g.label + '"? (The drugs themselves are not deleted.)')) return;
+            groups = groups.filter(x => x.id !== g.id);
+            editingGroupId = groups.length ? groups[0].id : null;
+            saveGroups(); refreshGroupEditor();
+        });
+        document.getElementById('grpReset').addEventListener('click', () => {
+            if (!confirm('Reset all groups back to the original ones? Your changes will be lost.')) return;
+            groups = buildDefaultGroups(); editingGroupId = groups[0].id; saveGroups(); refreshGroupEditor();
+        });
+        document.getElementById('closeGroupModal').addEventListener('click', closeGroupEditor);
+        document.getElementById('closeGroupBtn').addEventListener('click', closeGroupEditor);
+        groupModal.addEventListener('click', (e) => { if (e.target === groupModal) closeGroupEditor(); });
+
+// Dynamic dosage calculator based on patient weight
+        function calculateDosages(doseStr, weight) {
+            if (!doseStr) return doseStr;
+            let computedStr = doseStr;
+
+            // 1. Ranges: e.g. "0.5 - 2 mg/kg" or "0.5-3.0 mcg/kg/min"
+            computedStr = computedStr.replace(/(\d+(?:\.\d+)?)\s*(?:-|to)\s*(\d+(?:\.\d+)?)\s*(mg|mcg|ml|mL)\/kg(\/(?:min|hr))?/gi, (match, min, max, unit, rate) => {
+                const low = +(parseFloat(min) * weight).toFixed(2);
+                const high = +(parseFloat(max) * weight).toFixed(2);
+                const rateSuffix = rate ? rate : '';
+                return `${match} <span class="text-blue-400 font-semibold">[${low}–${high} ${unit}${rateSuffix}]</span>`;
+            });
+
+            // 2. Single values: e.g. "0.1 mg/kg" or "50 mcg/kg" (skipping anything already converted)
+            computedStr = computedStr.replace(/(\d+(?:\.\d+)?)\s*(mg|mcg|ml|mL)\/kg(\/(?:min|hr))?(?!\s*<span)/gi, (match, val, unit, rate) => {
+                const total = +(parseFloat(val) * weight).toFixed(2);
+                const rateSuffix = rate ? rate : '';
+                return `${match} <span class="text-blue-400 font-semibold">[${total} ${unit}${rateSuffix}]</span>`;
+            });
+
+            return computedStr;
+        }
+
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        const drugGrid = document.getElementById('drugGrid');
+        const emptyState = document.getElementById('emptyState');
+        const searchInput = document.getElementById('searchInput');
+        const weightInput = document.getElementById('patientWeight');
+
+        function renderDrugs() {
+            const weight = parseFloat(weightInput.value) || 70;
+            const query = searchQuery.toLowerCase().trim();
+
+            drugGrid.innerHTML = '';
+
+            const filtered = drugs.filter(drug => {
+                const cat = getCategory(drug);
+                const matchesCat = inGroup(drug, currentFilter);
+                const matchesSearch = !query || 
+                    drug.nameStr.toLowerCase().includes(query) || 
+                    drug.useStr.toLowerCase().includes(query) || 
+                    drug.actionStr.toLowerCase().includes(query) ||
+                    drug.complicationStr.toLowerCase().includes(query);
+                return matchesCat && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(drug => {
+                const cat = getCategory(drug);
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition shadow-lg flex flex-col justify-between cursor-pointer group";
+                
+                const shortUse = drug.useStr.length > 90 ? drug.useStr.substring(0, 90) + '...' : drug.useStr;
+                const formattedDose = calculateDosages(drug.doseStr, weight);
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-start justify-between gap-2 mb-2">
+                            <h3 class="font-bold text-lg text-slate-100 group-hover:text-blue-400 transition">${drug.nameStr}</h3>
+                            <span class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">${cat}</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-3 line-clamp-2"><strong class="text-slate-300">Use:</strong> ${shortUse}</p>
+                        <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80 mb-3 font-mono text-xs text-slate-300">
+                            <div class="text-[10px] font-sans font-semibold text-blue-400 uppercase tracking-wider mb-0.5">Dosage:</div>
+                            <div class="line-clamp-3">${formattedDose}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 text-xs text-slate-500">
+                        <span>Overdose: ${drug.overdose}</span>
+                        <span class="text-blue-400 font-medium group-hover:translate-x-1 transition-transform">View Details →</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => openModal(drug, weight));
+                drugGrid.appendChild(card);
+            });
+        }
+
+        // Modal handling
+        const modal = document.getElementById('drugModal');
+        const modalContent = document.getElementById('modalContent');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBadge = document.getElementById('modalBadge');
+        const modalUse = document.getElementById('modalUse');
+        const modalDose = document.getElementById('modalDose');
+        const modalAction = document.getElementById('modalAction');
+        const modalComplication = document.getElementById('modalComplication');
+        const closeModal = document.getElementById('closeModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        function openModal(drug, weight) {
+            modalTitle.textContent = drug.nameStr;
+            modalBadge.textContent = getCategory(drug).toUpperCase();
+            modalUse.textContent = drug.useStr || 'None specified';
+            modalDose.innerHTML = calculateDosages(drug.doseStr, weight) || 'None specified';
+            modalAction.textContent = drug.actionStr || 'None specified';
+            modalComplication.textContent = drug.complicationStr || 'None listed';
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModalFn() {
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        closeModal.addEventListener('click', closeModalFn);
+        closeModalBtn.addEventListener('click', closeModalFn);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModalFn();
+        });
+
+        // Event Listeners
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderDrugs();
+        });
+
+        weightInput.addEventListener('input', () => {
+            renderDrugs();
+        });
+
+        // Keyboard Shortcut '/' to focus search
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '/' && document.activeElement !== searchInput) {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            if (e.key === 'Escape') {
+                closeModalFn();
+            }
+        });
+
+        // Initial render
+        renderCategoryButtons();
+        renderDrugs();
+    </script>
+</body>
+</html>
