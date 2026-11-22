@@ -6,27 +6,51 @@ A community modification for **Anesoft Anesthesia Simulator 6**. This repository
 
 <img width="1919" height="1079" alt="sim1" src="https://github.com/user-attachments/assets/826c0fd0-fc4e-4cf7-8b4f-1c18ac79b111" />
 
-## Prerequisites
+# Installation
 
-1. **Original Game Files:** You must hold a clean copy of the original **DEMO** program files (**350 files in total**).<br>
-Official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html). Hint: use the dev console :)
-3. Use the included [File Verifier](https://atomicek12345.github.io/Anesthesia-Simulator-6-Revived/) to verify your directory structure.
-4. **Git:** You need [Git](https://git-scm.com/downloads) installed on your system to apply the `.patch` file.
+No Python, manual file scraping, or terminal setup is required. The installers automatically download the official base demo files, fetch the latest patch from this repository, apply the mod, create Desktop shortcuts, and launch the simulator.
 
-<img width="1317" height="922" alt="lookuptool" src="https://github.com/user-attachments/assets/92cd4579-a732-428c-b92d-635f4f9b4422" />
+> **Install Location:**
+> - **Windows:** `%USERPROFILE%\AnesthesiaSimulator6Revived`
+> - **Linux / macOS:** `~/AnesthesiaSimulator6Revived`
 
-## Installation Instructions
+---
 
-chmod +x install_linux_mac.sh && ./install_linux_mac.sh
+### Windows (10 / 11)
+
+1. Download **`install_windows.bat`** from the [Latest Release](https://github.com/Atomicek12345/Anesthesia-Simulator-6-Revived/releases/latest) (or directly from this repository).
+2. Double-click **`install_windows.bat`** to run it.
+   - *If Windows SmartScreen appears, click **More info** → **Run anyway**.*
+   - *If Git is not installed on your PC, the installer will automatically install it via `winget`.*
+3. Wait ~10–15 seconds for the base files and patch to finish downloading.
+4. Once complete, **Anesthesia Simulator 6** (and **Anesthesia Lookup**, if included) will launch automatically in your default browser, and shortcuts will be added to your **Desktop**.
+
+---
+
+### Linux & macOS
+
+1. Download **`install_linux_mac.sh`** from the [Latest Release](https://github.com/Atomicek12345/Anesthesia-Simulator-6-Revived/releases/latest) (or directly from this repository).
+2. Open a terminal in the folder where you saved the file and run:
+   ```bash
+   chmod +x install_linux_mac.sh
+   ./install_linux_mac.sh
+
+## Manual installation
 
 1. Make sure you have all the **350 original DEMO files** in a clean folder on your computer.
-2. Make a backup of the unmodified files for future updates.
-3. Download `anesthesia_mod.patch` from the latest release and place it directly inside that same folder (alongside the original files).
-4. Open a terminal or command prompt inside your game folder.
-5. Run the following command to apply the changes:
+2. You may use a file verification web app supplied by this repo.
+3. Make a backup of the unmodified files for future updates.
+4. Download `anesthesia_mod.patch` from the latest release and place it directly inside that same folder (alongside the original files).
+5. Open a terminal or command prompt inside your game folder.
+6. Run the following command to apply the changes:
 ```bash
 git apply --whitespace=nowarn anesthesia_mod.patch
 ```
+
+## **To uninstall: Delete the AnesthesiaSimulator6Revived folder in your user directory and remove the shortcuts from your Desktop.**
+
+<img width="1317" height="922" alt="lookuptool" src="https://github.com/user-attachments/assets/92cd4579-a732-428c-b92d-635f4f9b4422" />
+
 Troubleshooting
 "Patch does not apply" error: Ensure your base folder contains the exact, unedited 350 files from the demo program and that no files have been renamed or moved.
 
