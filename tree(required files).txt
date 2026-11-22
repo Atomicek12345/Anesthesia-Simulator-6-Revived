@@ -208,7 +208,6 @@
 ª       fo_secretions.jpg
 ª       ghost.jpg
 ª       heart.jpg
-ª       IncendiumInstaller.exe
 ª       Isoflurane.jpg
 ª       lary_1.jpg
 ª       lary_2.jpg
