@@ -199,7 +199,6 @@
 ª       doTub_6.jpg
 ª       doTub_7.jpg
 ª       doTub_8.jpg
-ª       favicon.ico
 ª       flowmeter.jpg
 ª       fo_carina.jpg
 ª       fo_esophagus.jpg
