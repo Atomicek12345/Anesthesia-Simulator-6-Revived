@@ -17,6 +17,8 @@ Official **Anesoft** [website](https://anesoft.com/demos/anesth6/index.html). Hi
 
 ## Installation Instructions
 
+chmod +x install_linux_mac.sh && ./install_linux_mac.sh
+
 1. Make sure you have all the **350 original DEMO files** in a clean folder on your computer.
 2. Make a backup of the unmodified files for future updates.
 3. Download `anesthesia_mod.patch` from the latest release and place it directly inside that same folder (alongside the original files).
