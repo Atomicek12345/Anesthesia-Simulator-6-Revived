@@ -38,7 +38,7 @@ No Python, manual file scraping, or terminal setup is required. The installers a
 ## Manual installation
 
 1. Make sure you have all the **350 original DEMO files** in a clean folder on your computer.
-2. You may use a file verification web app supplied by this repo.
+2. You may use a file verification [web app](https://atomicek12345.github.io/Anesthesia-Simulator-6-Revived/verify.html) supplied by this repo.
 3. Make a backup of the unmodified files for future updates.
 4. Download `anesthesia_mod.patch` from the latest release and place it directly inside that same folder (alongside the original files).
 5. Open a terminal or command prompt inside your game folder.
