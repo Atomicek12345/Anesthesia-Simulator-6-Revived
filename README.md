@@ -49,7 +49,7 @@ git apply --whitespace=nowarn anesthesia_mod.patch
 
 ## **To uninstall: Delete the AnesthesiaSimulator6Revived folder in your user directory and remove the shortcuts from your Desktop.**
 
-<img width="1317" height="922" alt="lookuptool" src="https://github.com/user-attachments/assets/92cd4579-a732-428c-b92d-635f4f9b4422" />
+<img width="1905" height="1079" alt="Beta lookup tool!" src="https://github.com/user-attachments/assets/dce4c217-0ca1-42fd-93d0-3bab9dab40e4" />
 
 Troubleshooting
 "Patch does not apply" error: Ensure your base folder contains the exact, unedited 350 files from the demo program and that no files have been renamed or moved.
