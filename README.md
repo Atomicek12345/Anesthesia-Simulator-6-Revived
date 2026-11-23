@@ -60,7 +60,8 @@ git apply -R anesthesia_mod.patch
 ```
 **Disclaimer:** <br>
 This is an unofficial, non-commercial educational modification/revival project of the legacy *Anesoft Anesthesia Simulator 6*. <br>
-All original trademarks, media, and case scenarios remain the intellectual property of Anesoft Corporation. No commercial use is intended or permitted. <br>
+All original trademarks, media, and case scenarios remain the intellectual property of Anesoft Corporation. <br>
+No commercial use is intended or permitted. <br>
 This project is not in any way endorsed, affiliated or supported by the Anesoft Corporation.<br>
 Screenshots are provided solely to demonstrate the tweaks in action; *Anesoft Anesthesia Simulator 6* and all original interface visuals remain the copyright and trademark of Anesoft Corporation.
 
