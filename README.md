@@ -18,7 +18,7 @@ No Python, manual file scraping, or terminal setup is required. The installers a
 
 ### Windows (10 / 11)
 
-1. Download **`install_windows.bat`** from the [Latest Release](https://github.com/Atomicek12345/Anesthesia-Simulator-6-Revived/releases/latest) (or directly from this repository).
+1. You may download **`install_windows.bat`** from the [Latest Release](https://github.com/Atomicek12345/Anesthesia-Simulator-6-Revived/releases/latest) (or directly from this repository).
 2. Double-click **`install_windows.bat`** to run it.
    - *If Windows SmartScreen appears, click **More info** → **Run anyway**.*
    - *If Git is not installed on your PC, the installer will automatically install it via `winget`.*
@@ -29,7 +29,7 @@ No Python, manual file scraping, or terminal setup is required. The installers a
 
 ### Linux & macOS
 
-1. Download **`install_linux_mac.sh`** from the [Latest Release](https://github.com/Atomicek12345/Anesthesia-Simulator-6-Revived/releases/latest) (or directly from this repository).
+1. You may download **`install_linux_mac.sh`** from the [Latest Release](https://github.com/Atomicek12345/Anesthesia-Simulator-6-Revived/releases/latest) (or directly from this repository).
 2. Open a terminal in the folder where you saved the file and run:
    ```bash
    chmod +x install_linux_mac.sh
