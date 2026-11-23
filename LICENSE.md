@@ -1,4 +1,9 @@
 Required Notice: Copyright 2026 Atomicek12345
+Required Notice: Official repository: https://github.com/Atomicek12345/Anesthesia-Simulator-6-Revived
+Required Notice: Revival project based on the original Anesoft Anesthesia Simulator 6. Original concepts and legacy assets belong to their respective creators (Anesoft Corporation).
+
+For commercial licensing inquiries or permission to monetize content/builds, contact hozatomas@email.cz
+
 # PolyForm Noncommercial License 1.0.0
 
 <https://polyformproject.org/licenses/noncommercial/1.0.0>
