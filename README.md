@@ -58,7 +58,8 @@ Reverting changes: To undo the mod and restore the original game, run:
 ```bash
 git apply -R anesthesia_mod.patch
 ```
-Disclaimer <br>
-This is an unofficial, non-commercial educational modification/revival project of the legacy Anesthesia Simulator 6. All original trademarks, media, and case scenarios remain the intellectual property of Anesoft Corporation. No commercial use is intended or permitted.
+**Disclaimer:** <br>
+This is an unofficial, non-commercial educational modification/revival project of the legacy Anesoft Anesthesia Simulator 6. All original trademarks, media, and case scenarios remain the intellectual property of Anesoft Corporation. No commercial use is intended or permitted. <br>
+Screenshots are provided solely to demonstrate the tweaks in action; *Anesoft Anesthesia Simulator 6* and all original interface visuals remain the copyright and trademark of Anesoft Corporation.
 
 If you encounter any difficulties, you can always DM me here or on Discord: atomicek1234
