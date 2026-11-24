@@ -9,7 +9,7 @@ A community modification for **Anesoft Anesthesia Simulator 6**. This repository
 # Installation (**Beta** release must be installed manually if present!)
 
 No Python, manual file scraping, or terminal setup is required. The installers automatically download the official base demo files, fetch the latest patch from this repository, apply the mod, create Desktop shortcuts, and launch the simulator.
-Note that we are in the middle of development so do not expect perfect functionality and reliability. **Many features are yet to come!**
+## Note that we are in the middle of development so do not expect perfect functionality and reliability. **Many features are yet to come!** If you find bugs or wanna suggest improvements, please open an Issue here on Github, thank you.
 
 > **Install Location:**
 > - **Windows:** `%USERPROFILE%\AnesthesiaSimulator6Revived`
