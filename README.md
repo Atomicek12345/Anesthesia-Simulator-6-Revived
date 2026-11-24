@@ -6,7 +6,7 @@ A community modification for **Anesoft Anesthesia Simulator 6**. This repository
 
 <img width="1919" height="1079" alt="sim2betaui" src="https://github.com/user-attachments/assets/74a2539e-51b2-4eba-ad9d-0406af755cea" />
 
-# Installation ([**Beta**](https://github.com/Atomicek12345/Anesthesia-Simulator-6-Revived/releases/tag/v2-beta) release must be installed manually if present!)
+# Installation (**Beta** release must be installed manually if present!)
 
 No Python, manual file scraping, or terminal setup is required. The installers automatically download the official base demo files, fetch the latest patch from this repository, apply the mod, create Desktop shortcuts, and launch the simulator.
 
