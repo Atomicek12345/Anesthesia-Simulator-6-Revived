@@ -20,7 +20,7 @@ No Python, manual file scraping, or terminal setup is required. The installers a
 
 1. You may download **`install_windows.bat`** from the [Latest Release](https://github.com/Atomicek12345/Anesthesia-Simulator-6-Revived/releases/latest) (or directly from this repository).
 2. Double-click **`install_windows.bat`** to run it.
-   - *If Windows SmartScreen appears, click **More info** → **Run anyway**.*
+   - *If Windows SmartScreen appears, click **More info** → **Run anyway**.* (Its a web app, if you do not trust this repo, you are welcome to look into the code.)
    - *If Git is not installed on your PC, the installer will automatically install it via `winget`.*
 3. Wait ~10–15 seconds for the base files and patch to finish downloading.
 4. Once complete, **Anesthesia Simulator 6** (and **Anesthesia Lookup**, if included) will launch automatically in your default browser, and shortcuts will be added to your **Desktop**.
