@@ -112,19 +112,34 @@ if ($errs.Count -gt 0) {
 Write-Host "Base files downloaded successfully!`n" -ForegroundColor Green
 
 # Ensure Git is installed
-$gitCmd = Get-Command git -ErrorAction SilentlyContinue
-if (-not $gitCmd -and (Test-Path "C:\Program Files\Git\cmd\git.exe")) {
-    $env:PATH += ";C:\Program Files\Git\cmd"
-    $gitCmd = Get-Command git -ErrorAction SilentlyContinue
+function Find-GitExe {
+    $cmd = Get-Command git -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+
+    $candidates = @(
+        "$env:ProgramFiles\Git\cmd\git.exe",
+        "${env:ProgramFiles(x86)}\Git\cmd\git.exe",
+        "$env:LocalAppData\Programs\Git\cmd\git.exe"
+    )
+    foreach ($p in $candidates) {
+        if (Test-Path $p) { return $p }
+    }
+    return $null
 }
-if (-not $gitCmd) {
+
+$gitExe = Find-GitExe
+if (-not $gitExe) {
     Write-Host "Git not found. Attempting automatic install via winget..." -ForegroundColor Yellow
     if (Get-Command winget -ErrorAction SilentlyContinue) {
         winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements
-        $env:PATH += ";C:\Program Files\Git\cmd;C:\Program Files (x86)\Git\cmd"
-        $gitCmd = Get-Command git -ErrorAction SilentlyContinue
+        
+        # Reload Machine + User PATH from Registry into current session
+        $env:PATH = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+                    [Environment]::GetEnvironmentVariable("Path", "User")
+        
+        $gitExe = Find-GitExe
     }
-    if (-not $gitCmd) {
+    if (-not $gitExe) {
         throw "Git is required to apply the patch. Please install Git from https://git-scm.com/download/win and re-run."
     }
 }
@@ -142,15 +157,14 @@ try {
 # Apply patch inside clean folder
 Push-Location $InstallDir
 try {
-    & git init -q
-    & git apply --ignore-whitespace --whitespace=nowarn $patchFile
+    & $gitExe init -q
+    & $gitExe apply --ignore-whitespace --whitespace=nowarn $patchFile
     if ($LASTEXITCODE -ne 0) { throw "git apply failed with exit code $LASTEXITCODE." }
     Remove-Item ".git" -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item $patchFile -Force -ErrorAction SilentlyContinue
 } finally {
     Pop-Location
 }
-Write-Host "Patch applied successfully!`n" -ForegroundColor Green
 
 # Create Desktop shortcuts
 $desktop = [Environment]::GetFolderPath("Desktop")
