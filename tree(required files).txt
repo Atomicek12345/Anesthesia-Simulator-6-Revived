@@ -285,7 +285,6 @@
 ª       AnesthCode.js
 ª       Default.js
 ª       DrugInfo.js
-ª       DrugInfo.js.bak
 ª       iscroll-lite.js
 ª       IvAdmin.js
 ª       ModelsAndFsm.js
