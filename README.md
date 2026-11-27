@@ -38,7 +38,7 @@ No Python, manual file scraping, or terminal setup is required. The installers a
 
 ## Manual installation
 
-1. Make sure you have all the **350 original DEMO files** in a clean folder on your computer.
+1. Make sure you have all the **349 original DEMO files** in a clean folder on your computer.
 2. You may use a file verification [web app](https://atomicek12345.github.io/Anesthesia-Simulator-6-Revived/verify.html) supplied by this repo.
 3. Make a backup of the unmodified files for future updates.
 4. Download `anesthesia_mod.patch` from the latest **BETA** release and place it directly inside that same folder (alongside the original files).
@@ -53,7 +53,7 @@ git apply --whitespace=nowarn anesthesia_mod.patch
 <img width="1905" height="1079" alt="Beta lookup tool!" src="https://github.com/user-attachments/assets/dce4c217-0ca1-42fd-93d0-3bab9dab40e4" />
 
 Troubleshooting
-"Patch does not apply" error: Ensure your base folder contains the exact, unedited 350 files from the demo program and that no files have been renamed or moved.
+"Patch does not apply" error: Ensure your base folder contains the exact, unedited 349 files from the demo program and that no files have been renamed or moved.
 
 Reverting changes: To undo the mod and restore the original game, run:
 ```bash
