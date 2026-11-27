@@ -1,7 +1,7 @@
 @echo off
 set "BAT_PATH=%~f0"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Invoke-Expression ((Get-Content -LiteralPath $env:BAT_PATH | Select-Object -Skip 5) -join [Environment]::NewLine)"
-pause
+if errorlevel 1 pause
 exit /b %ERRORLEVEL%
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -131,7 +131,7 @@ $gitExe = Find-GitExe
 if (-not $gitExe) {
     Write-Host "Git not found. Attempting automatic install via winget..." -ForegroundColor Yellow
     if (Get-Command winget -ErrorAction SilentlyContinue) {
-        winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements
+        winget install --id Git.Git -e --accept-package-agreements --accept-source-agreements --scope user
         
         # Reload Machine + User PATH from Registry into current session
         $env:PATH = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
@@ -166,32 +166,265 @@ try {
     Pop-Location
 }
 
-# Create Desktop shortcuts
+# Generate the combined launcher (game + lookup, one window) inside $InstallDir
+$serverScriptPath = Join-Path $InstallDir "StartServer.ps1"
+$serverCode = @'
+param(
+    [string]$RootDir = $PSScriptRoot
+)
+
+$Host.UI.RawUI.WindowTitle = "Anesthesia Simulator 6 - Server"
+$rootFull = [System.IO.Path]::GetFullPath($RootDir)
+
+# ---------- Listener: try a fixed port first (keeps browser-saved data stable), else random ----------
+$listener = $null
+$port = 0
+foreach ($try in @(8642, 0)) {
+    $port = $try
+    if ($port -eq 0) {
+        $tcp = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+        $tcp.Start(); $port = $tcp.LocalEndpoint.Port; $tcp.Stop()
+    }
+    try {
+        $l = New-Object System.Net.HttpListener
+        $l.Prefixes.Add("http://127.0.0.1:$port/")
+        $l.Start()
+        $listener = $l
+        break
+    } catch { }
+}
+if (-not $listener) { Write-Host "Could not start the local server." -ForegroundColor Red; Read-Host "Press Enter"; exit 1 }
+$prefix = "http://127.0.0.1:$port/"
+
+$mimeTypes = @{
+    ".html" = "text/html; charset=utf-8"
+    ".js"   = "application/javascript; charset=utf-8"
+    ".mjs"  = "application/javascript; charset=utf-8"
+    ".css"  = "text/css; charset=utf-8"
+    ".json" = "application/json; charset=utf-8"
+    ".wasm" = "application/wasm"
+    ".wav"  = "audio/wav"
+    ".mp3"  = "audio/mpeg"
+    ".jpg"  = "image/jpeg"
+    ".jpeg" = "image/jpeg"
+    ".png"  = "image/png"
+    ".gif"  = "image/gif"
+    ".svg"  = "image/svg+xml"
+    ".ico"  = "image/x-icon"
+}
+
+$pages = @{ game = "index.html"; lookup = "lookup.html" }
+$hasLookup = Test-Path -LiteralPath (Join-Path $rootFull "lookup.html")
+
+# Per-window state
+$st = @{}
+foreach ($n in @("game", "lookup")) {
+    $st[$n] = @{ Open = $false; Started = [datetime]::MinValue; Bye = $null; Tracked = $false }
+}
+
+# Small script appended to served pages: tells the server when a page loads / is closed
+$injectTemplate = "<script>(function(){var p='@@';function s(u){try{navigator.sendBeacon('/__'+u+'?p='+p)}catch(e){}}s('hello');window.addEventListener('pagehide',function(){s('bye')});})();</script>"
+
+# ---------- Browser helpers ----------
+function Find-Browser {
+    $c = @(
+        "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+        "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
+        "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
+        "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
+        "$env:LocalAppData\Google\Chrome\Application\chrome.exe"
+    )
+    foreach ($p in $c) { if (Test-Path -LiteralPath $p) { return $p } }
+    return $null
+}
+
+function Get-BrowserProcs([string]$name) {
+    Get-CimInstance Win32_Process -Filter "Name='msedge.exe' OR Name='chrome.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like "*AnesSim6_$name*" }
+}
+
+function Close-Browser([string]$name) {
+    Get-BrowserProcs $name | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+}
+
+function Open-Page([string]$name) {
+    $s = $st[$name]
+    $url = $prefix + $pages[$name]
+    $s.Open = $true
+    $s.Started = Get-Date
+    $s.Bye = $null
+    $exe = Find-Browser
+    if ($exe) {
+        # Separate profile per window so each one can be closed independently
+        $prof = Join-Path $env:TEMP "AnesSim6_$name"
+        Start-Process -FilePath $exe -ArgumentList @("--user-data-dir=`"$prof`"", "--app=$url", "--no-first-run", "--no-default-browser-check") | Out-Null
+        $s.Tracked = $true
+    } else {
+        Start-Process $url
+        $s.Tracked = $false
+    }
+}
+
+function On-Closed([string]$name) {
+    $st[$name].Open = $false
+    $st[$name].Bye = $null
+    Close-Browser $name
+    if ($name -eq "game") {
+        Write-Host "`nGame window closed - shutting down..." -ForegroundColor Yellow
+        $script:running = $false
+    } else {
+        Write-Host "`nLookup closed. Press L to open it again." -ForegroundColor Yellow
+    }
+}
+
+# ---------- Request handling ----------
+function Handle-Request($ctx) {
+    $res = $ctx.Response
+    try {
+        $rel = [Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath.TrimStart('/'))
+        if ([string]::IsNullOrWhiteSpace($rel)) { $rel = "index.html" }
+
+        if ($rel -eq "__hello" -or $rel -eq "__bye") {
+            $n = $ctx.Request.QueryString["p"]
+            if ($n -and $st.ContainsKey($n)) {
+                if ($rel -eq "__hello") { $st[$n].Open = $true; $st[$n].Bye = $null }
+                else { $st[$n].Bye = Get-Date }
+            }
+            $res.StatusCode = 204
+            return
+        }
+
+        $candidate = [System.IO.Path]::GetFullPath((Join-Path $rootFull ($rel -replace '/', '\')))
+        # Prevent directory traversal outside the install folder
+        if ($candidate.StartsWith($rootFull, [System.StringComparison]::OrdinalIgnoreCase) -and (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+            $ext = [System.IO.Path]::GetExtension($candidate).ToLowerInvariant()
+            $res.ContentType = if ($mimeTypes.ContainsKey($ext)) { $mimeTypes[$ext] } else { "application/octet-stream" }
+            $res.Headers.Add("Cache-Control", "no-cache")
+            $bytes = [System.IO.File]::ReadAllBytes($candidate)
+
+            $pageName = $null
+            switch ($rel.ToLowerInvariant()) {
+                "index.html"  { $pageName = "game" }
+                "lookup.html" { $pageName = "lookup" }
+            }
+            if ($pageName) {
+                $inj = [System.Text.Encoding]::ASCII.GetBytes($injectTemplate.Replace("@@", $pageName))
+                $bytes = [byte[]]($bytes + $inj)
+            }
+
+            $res.ContentLength64 = $bytes.Length
+            $res.OutputStream.Write($bytes, 0, $bytes.Length)
+            $res.StatusCode = 200
+        } else {
+            $res.StatusCode = 404
+        }
+    } catch {
+        try { $res.StatusCode = 500 } catch { }
+    } finally {
+        try { $res.OutputStream.Close() } catch { }
+    }
+}
+
+# ---------- Watchdog: if this window is killed/closed, close the browser windows too ----------
+$wd = {
+    param($m)
+    while (Get-Process -Id $m -ErrorAction SilentlyContinue) { Start-Sleep -Seconds 1 }
+    Get-CimInstance Win32_Process -Filter "Name='msedge.exe' OR Name='chrome.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like '*AnesSim6_*' } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+}
+$enc = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes("& { $($wd.ToString()) } $PID"))
+Start-Process -FilePath "powershell.exe" -WindowStyle Hidden -ArgumentList @("-NoProfile", "-ExecutionPolicy", "Bypass", "-EncodedCommand", $enc) | Out-Null
+
+# ---------- UI ----------
+Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host "  Anesthesia Simulator 6 Local Server" -ForegroundColor Cyan
+Write-Host "  Running at: $prefix" -ForegroundColor Green
+Write-Host "--------------------------------------------------" -ForegroundColor Cyan
+if ($hasLookup) { Write-Host "  [L] Reopen Lookup" }
+Write-Host "  [Q] Quit (closes everything)"
+Write-Host "  Closing the game window also closes this window." -ForegroundColor Yellow
+Write-Host "==================================================" -ForegroundColor Cyan
+
+$script:running = $true
+Open-Page "game"
+if ($hasLookup) { Open-Page "lookup" }
+
+$ctxTask = $listener.GetContextAsync()
+$lastPoll = Get-Date
+
+try {
+    while ($script:running) {
+        if ($ctxTask.Wait(150)) {
+            $ctx = $ctxTask.Result
+            $ctxTask = $listener.GetContextAsync()
+            Handle-Request $ctx
+        }
+
+        # Keyboard
+        try {
+            while ([Console]::KeyAvailable) {
+                $k = [Console]::ReadKey($true)
+                switch ($k.Key) {
+                    "L" {
+                        if (-not $hasLookup) { Write-Host "Lookup is not installed." -ForegroundColor Yellow }
+                        elseif ($st["lookup"].Open) { Write-Host "Lookup is already open." -ForegroundColor Yellow }
+                        else { Write-Host "Opening Lookup..." -ForegroundColor Green; Open-Page "lookup" }
+                    }
+                    "Q" { $script:running = $false }
+                }
+            }
+        } catch { }
+
+        # Closed-window detection
+        $now = Get-Date
+        $doPoll = (($now - $lastPoll).TotalSeconds -ge 2)
+        if ($doPoll) { $lastPoll = $now }
+
+        foreach ($n in @("game", "lookup")) {
+            $s = $st[$n]
+            if (-not $s.Open) { continue }
+            $closed = $false
+            # Page said goodbye and didn't come back (a reload sends hello again within seconds)
+            if ($s.Bye -and (($now - $s.Bye).TotalSeconds -gt 3)) { $closed = $true }
+            # Backup: dedicated browser process is gone
+            elseif ($s.Tracked -and $doPoll -and (($now - $s.Started).TotalSeconds -gt 8)) {
+                if (-not (Get-BrowserProcs $n)) { $closed = $true }
+            }
+            if ($closed) { On-Closed $n }
+            if (-not $script:running) { break }
+        }
+    }
+} finally {
+    Close-Browser "game"
+    Close-Browser "lookup"
+    try { $listener.Stop(); $listener.Close() } catch { }
+}
+'@
+
+Set-Content -LiteralPath $serverScriptPath -Value $serverCode -Encoding UTF8
+
+# Create one Desktop shortcut that starts game + lookup
 $desktop = [Environment]::GetFolderPath("Desktop")
 $wsh = New-Object -ComObject WScript.Shell
 $iconPath = Join-Path $InstallDir "images\favicon.ico"
+$psExe = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
 
-function Make-Shortcut($name, $targetFile) {
-    $lnk = $wsh.CreateShortcut((Join-Path $desktop "$name.lnk"))
-    $lnk.TargetPath = $targetFile
-    $lnk.WorkingDirectory = $InstallDir
-    if (Test-Path $iconPath) { $lnk.IconLocation = $iconPath }
-    $lnk.Save()
+# Remove the old separate lookup shortcut from earlier installs
+$oldLookup = Join-Path $desktop "Anesthesia Lookup.lnk"
+if (Test-Path -LiteralPath $oldLookup) { Remove-Item -LiteralPath $oldLookup -Force -ErrorAction SilentlyContinue }
+
+$lnk = $wsh.CreateShortcut((Join-Path $desktop "Anesthesia Simulator 6.lnk"))
+$lnk.TargetPath = $psExe
+$lnk.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$serverScriptPath`""
+$lnk.WorkingDirectory = $InstallDir
+if (Test-Path $iconPath) { $lnk.IconLocation = $iconPath }
+$lnk.Save()
+Write-Host "Created Desktop shortcut: Anesthesia Simulator 6 (opens game + lookup)"
+
+if (-not (Test-Path -LiteralPath (Join-Path $InstallDir "lookup.html"))) {
+    Write-Host "Note: lookup.html was not in the patch, only the game will open." -ForegroundColor Yellow
 }
 
-$indexPath  = Join-Path $InstallDir "index.html"
-$lookupPath = Join-Path $InstallDir "lookup.html"
-
-Make-Shortcut "Anesthesia Simulator 6" $indexPath
-Write-Host "Created Desktop shortcut: Anesthesia Simulator 6"
-Start-Process $indexPath
-
-if (Test-Path $lookupPath) {
-    Make-Shortcut "Anesthesia Lookup" $lookupPath
-    Write-Host "Created Desktop shortcut: Anesthesia Lookup"
-    Start-Process $lookupPath
-} else {
-    Write-Host "Note: lookup.html was not in the patch, skipped its shortcut/launch." -ForegroundColor Yellow
-}
-
-Write-Host "`nAll done! Enjoy the simulator." -ForegroundColor Cyan
+Write-Host "`nAll done! Starting..." -ForegroundColor Cyan
+& $serverScriptPath
